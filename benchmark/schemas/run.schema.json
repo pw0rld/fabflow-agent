@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "run_id",
+    "execution_kind",
+    "model_called",
+    "versions",
+    "host"
+  ],
+  "properties": {
+    "run_id": {
+      "type": "string"
+    },
+    "execution_kind": {
+      "enum": [
+        "saved_export",
+        "model_run"
+      ]
+    },
+    "model_called": {
+      "type": "boolean"
+    },
+    "elapsed_seconds": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "cost": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "versions": {
+      "type": "object"
+    },
+    "input_sha256": {
+      "type": "string"
+    },
+    "host": {
+      "type": "string"
+    }
+  }
+}

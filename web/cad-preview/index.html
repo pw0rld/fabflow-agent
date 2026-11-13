@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CAD 图纸预览</title>
+  <link rel="stylesheet" href="./viewer.css">
+  <script type="module" src="./viewer.js"></script>
+</head>
+<body>
+  <div class="toolbar" aria-label="预览工具">
+    <strong id="format">CAD</strong>
+    <button type="button" id="zoom-out" disabled aria-label="缩小">−</button>
+    <button type="button" id="zoom-in" disabled aria-label="放大">+</button>
+    <button type="button" id="reset" disabled>适合窗口</button>
+    <button type="button" id="retry" hidden>重新预览</button>
+    <a id="original" hidden target="_blank" rel="noopener">下载原文件</a>
+  </div>
+  <div id="viewport">
+    <div id="stage" aria-label="CAD 预览区域"></div>
+    <div id="loading"><span class="spinner" aria-hidden="true"></span><p id="status" role="status" aria-live="polite">正在准备预览…</p></div>
+  </div>
+  <div class="note"><span id="hint">正在载入图纸</span><span id="warning" role="status"></span><span>预览供核对，尺寸及技术要求以原件为准。</span></div>
+</body>
+</html>

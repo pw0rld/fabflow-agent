@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "case_id",
+    "source_family_id",
+    "track",
+    "split",
+    "inputs",
+    "reference_paths",
+    "license",
+    "truth_status"
+  ],
+  "properties": {
+    "case_id": {
+      "type": "string"
+    },
+    "source_family_id": {
+      "type": "string"
+    },
+    "track": {
+      "enum": [
+        "image",
+        "step",
+        "cad_dxf"
+      ]
+    },
+    "split": {
+      "enum": [
+        "development",
+        "holdout"
+      ]
+    },
+    "inputs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "reference_paths": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "license": {
+      "type": "string"
+    },
+    "truth_status": {
+      "enum": [
+        "provisional",
+        "engineering_verified",
+        "disputed",
+        "unreadable",
+        "not_applicable"
+      ]
+    }
+  }
+}

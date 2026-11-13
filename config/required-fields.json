@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "config_id": "bracket-demo-v1",
+  "fields": {
+    "product_name": {
+      "label": "产品/资料归属",
+      "kind": "text",
+      "stage": "customer",
+      "required": true,
+      "unit": null
+    },
+    "quantity": {
+      "label": "订单数量",
+      "kind": "quantity",
+      "stage": "customer",
+      "required": true,
+      "unit": "piece"
+    },
+    "material_family": {
+      "label": "材料原文/类别",
+      "kind": "text",
+      "stage": "customer",
+      "required": true,
+      "unit": null
+    },
+    "material_grade": {
+      "label": "客户指定牌号",
+      "kind": "text",
+      "stage": "customer",
+      "required": true,
+      "unit": null
+    },
+    "drawing_units": {
+      "label": "图纸单位体系",
+      "kind": "text",
+      "stage": "customer",
+      "required": false,
+      "unit": null
+    },
+    "thickness": {
+      "label": "板厚",
+      "kind": "length",
+      "stage": "customer",
+      "required": true,
+      "unit": "mm"
+    },
+    "inner_bend_radius": {
+      "label": "内折弯半径",
+      "kind": "length",
+      "stage": "technical",
+      "required": false,
+      "unit": "mm"
+    },
+    "surface_treatment": {
+      "label": "表面处理",
+      "kind": "text",
+      "stage": "customer",
+      "required": true,
+      "unit": null
+    },
+    "material_usage_per_piece": {
+      "label": "单件用量",
+      "kind": "decimal",
+      "stage": "technical",
+      "required": true,
+      "unit": "kg/piece"
+    },
+    "process_route": {
+      "label": "采用工序",
+      "kind": "list",
+      "stage": "technical",
+      "required": true,
+      "unit": null
+    },
+    "material_rate": {
+      "label": "材料原始费率",
+      "kind": "decimal",
+      "stage": "technical",
+      "required": true,
+      "unit": "CNY/kg"
+    },
+    "operation_rates": {
+      "label": "工序原始费率",
+      "kind": "rates",
+      "stage": "technical",
+      "required": true,
+      "unit": null
+    },
+    "setup_fee": {
+      "label": "一次性费用原始输入",
+      "kind": "decimal",
+      "stage": "technical",
+      "required": true,
+      "unit": "CNY/order"
+    },
+    "fee_inclusions": {
+      "label": "包含项说明",
+      "kind": "list",
+      "stage": "technical",
+      "required": true,
+      "unit": null
+    },
+    "engineering_open_items": {
+      "label": "工程待验证事项",
+      "kind": "list",
+      "stage": "technical",
+      "required": false,
+      "unit": null
+    }
+  }
+}

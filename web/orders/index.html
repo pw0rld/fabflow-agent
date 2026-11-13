@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>批量订单 · 好运来报价工作台</title>
+  <link rel="stylesheet" href="/workbench/styles.css">
+  <link rel="stylesheet" href="/workbench/orders/orders.css">
+  <script src="/workbench/orders/orders.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="主导航">
+      <a class="brand" href="/workbench/"><span class="brand-mark">好</span><span><strong>好运来</strong><small>钣金报价工作台</small></span></a>
+      <nav><a href="/workbench/">单品询价</a><a class="active" href="/workbench/orders/" aria-current="page">批量订单</a></nav>
+      <div class="sidebar-note">内部报价工作台<br>报价草稿需人工审核</div>
+    </aside>
+    <div class="workspace">
+      <header class="topbar"><span id="breadcrumb">批量订单</span><span class="internal-label">模拟报价 · 内部使用</span></header>
+      <main id="content" tabindex="-1" aria-busy="true"><div class="loading">正在加载批量订单…</div></main>
+    </div>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <dialog id="order-dialog"><div id="dialog-content"></div></dialog>
+  <noscript>请启用浏览器 JavaScript 后使用报价工作台。</noscript>
+</body>
+</html>

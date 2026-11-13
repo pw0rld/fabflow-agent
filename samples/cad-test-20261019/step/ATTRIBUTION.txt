@@ -1,0 +1,22 @@
+Nema-17_MountBracket.step
+
+Source: FreeCAD/FreeCAD-library, a community-maintained parts library.
+Repository commit: f5ca01cdcaa2f69b9295a6382719c2d90628780c
+Path: Electrical Parts/Motors/Stepper/NEMA/Nema-17_Mount_Bracket/Nema-17_MountBracket.step
+Source URL: https://github.com/FreeCAD/FreeCAD-library/blob/f5ca01cdcaa2f69b9295a6382719c2d90628780c/Electrical%20Parts/Motors/Stepper/NEMA/Nema-17_Mount_Bracket/Nema-17_MountBracket.step
+
+Attribution: FreeCAD-library contributors. The file was contributed to this
+repository by Charles Fox in commit 6ca91d1dc7aeedc40d40b4d37e65163b332941db.
+The original model author has not been confirmed: the STEP author field
+contains only the placeholder "Author". The contributor is not assumed to
+be the original model author.
+
+License: Creative Commons Attribution 3.0 Unported (CC BY 3.0), as stated
+for all parts in the upstream repository README included alongside this file.
+License URL: https://creativecommons.org/licenses/by/3.0/
+Upstream license statement:
+https://github.com/FreeCAD/FreeCAD-library/blob/f5ca01cdcaa2f69b9295a6382719c2d90628780c/README.md#license
+
+The STEP file is unmodified. It is provided as a public CAD format test sample,
+not as customer production data or a manufacturing specification.
+SHA256: ee28ab7d424d166a28d2e92eabe38c1a5dab59d0ca169cd2e3516e0e8015af41

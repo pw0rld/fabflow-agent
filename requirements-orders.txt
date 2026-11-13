@@ -1,0 +1,3 @@
+# PDFium/Pillow used only by the isolated order preprocessing subprocess.
+pypdfium2==5.14.0
+Pillow==13.0.0

@@ -1,0 +1,26 @@
+{
+  "name": "@mlightcad/libredwg-web",
+  "version": "0.8.1",
+  "license": "GPL-3.0",
+  "source_commit": "53137eeb1fe54e400bfd77a7ad8e21bc373cc998",
+  "source_url": "https://github.com/mlightcad/libredwg-web/tree/53137eeb1fe54e400bfd77a7ad8e21bc373cc998",
+  "source_archive": "https://github.com/mlightcad/libredwg-web/archive/53137eeb1fe54e400bfd77a7ad8e21bc373cc998.tar.gz",
+  "package_url": "https://registry.npmjs.org/@mlightcad/libredwg-web/-/libredwg-web-0.8.1.tgz",
+  "package_sha256": "e544240c89d5fbbfe7046c401d4f49a5c2d061322a54094f2caf6a2914e14dcc",
+  "provenance_url": "https://registry.npmjs.org/-/npm/v1/attestations/@mlightcad%2flibredwg-web@0.8.1",
+  "runtime_files": {
+    "dist/libredwg-web.js": {
+      "bytes": 279590,
+      "sha256": "28e417f408b33937fe75469285806e55f90d96d95c472a55ac38bbed9905c19d"
+    },
+    "wasm/libredwg-web.js": {
+      "bytes": 110192,
+      "sha256": "62deaef11c2d6cf8fd0a0ee83d29120ca40bdabc2cdd9baa1f7911410bf9d73f"
+    },
+    "wasm/libredwg-web.wasm": {
+      "bytes": 10810696,
+      "sha256": "afb887f6fe784b14bdafd1f335b201ddb50cb24e521a07d2f2581ee2bd87bd9c"
+    }
+  },
+  "modifications": "None. Original release artifacts are retained without modification."
+}

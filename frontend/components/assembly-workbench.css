@@ -1,0 +1,96 @@
+
+    #hy-assembly-v3 { --hy-paper:light-dark(#ffffff,#18212b); --hy-bg:light-dark(#f5f7fa,#101820); --hy-ink:light-dark(#25364a,#e5edf5); --hy-muted:light-dark(#617287,#a6b5c7); --hy-line:light-dark(#dbe3eb,#394956); --hy-blue:light-dark(#1c659e,#91c8f2); --hy-soft:light-dark(#eaf3fb,#20384b); --hy-warn:light-dark(#92652c,#e6bc7e); --hy-warn-bg:light-dark(#fff8ed,#342b20); --hy-selected:light-dark(#175985,#9ad3f7); color:var(--hy-ink); background:var(--hy-bg); font:14px/1.55 system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; border:1px solid var(--hy-line); border-radius:12px; overflow:hidden; }
+    #hy-assembly-v3 * { box-sizing:border-box; }
+    #hy-assembly-v3 [hidden] { display:none!important; }
+    #hy-assembly-v3 h2,#hy-assembly-v3 h3,#hy-assembly-v3 p { margin:0; }
+    #hy-assembly-v3 h2 { font-size:21px; font-weight:600; }
+    #hy-assembly-v3 h3 { font-size:15px; font-weight:600; }
+    #hy-assembly-v3 button,#hy-assembly-v3 select { font:inherit; color:inherit; }
+    #hy-assembly-v3 button { border:1px solid var(--hy-line); border-radius:7px; background:var(--hy-paper); padding:8px 12px; min-height:38px; }
+    #hy-assembly-v3 button:hover { background:var(--hy-soft); }
+    #hy-assembly-v3 button:focus-visible,#hy-assembly-v3 select:focus-visible { outline:2px solid var(--hy-blue); outline-offset:3px; }
+    #hy-assembly-v3 button.hy-primary { background:var(--hy-blue); color:var(--hy-paper); border-color:var(--hy-blue); }
+    #hy-assembly-v3 button[aria-pressed="true"] { border-color:var(--hy-blue); background:var(--hy-soft); }
+    #hy-assembly-v3 header { padding:20px 22px 14px; background:var(--hy-paper); border-bottom:1px solid var(--hy-line); }
+    #hy-assembly-v3 .hy-brand { display:flex; align-items:center; gap:12px; padding-right:82px; flex-wrap:wrap; }
+    #hy-assembly-v3 .hy-brand strong { letter-spacing:1px; }
+    #hy-assembly-v3 .hy-tag { font-size:12px; color:var(--hy-warn); background:var(--hy-warn-bg); padding:3px 7px; border-radius:4px; }
+    #hy-assembly-v3 .hy-steps { display:flex; flex-wrap:wrap; gap:8px; margin-top:18px; }
+    #hy-assembly-v3 .hy-steps button { border-color:transparent; background:transparent; color:var(--hy-muted); }
+    #hy-assembly-v3 .hy-steps button[aria-current="step"] { color:var(--hy-blue); background:var(--hy-soft); }
+    #hy-assembly-v3 .hy-page { padding:22px; }
+    #hy-assembly-v3 .hy-heading { display:flex; align-items:start; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:18px; }
+    #hy-assembly-v3 .hy-sub { color:var(--hy-muted); font-size:13px; margin-top:5px; }
+    #hy-assembly-v3 .hy-grid { display:grid; grid-template-columns:minmax(0,1.9fr) minmax(230px,1fr); gap:18px; }
+    #hy-assembly-v3 .hy-panel { background:var(--hy-paper); border:1px solid var(--hy-line); border-radius:8px; min-width:0; }
+    #hy-assembly-v3 .hy-panel-title { padding:12px 15px; border-bottom:1px solid var(--hy-line); display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; }
+    #hy-assembly-v3 .hy-body { padding:15px; }
+    #hy-assembly-v3 .hy-original { color:var(--hy-ink); display:block; width:100%; height:auto; background:var(--hy-paper); }
+    #hy-assembly-v3 .hy-original .hy-geometry { fill:none; stroke:currentColor; stroke-width:1.5; }
+    #hy-assembly-v3 .hy-original .hy-dashed { stroke-dasharray:5 4; }
+    #hy-assembly-v3 .hy-original text { font-family:Arial,sans-serif; fill:currentColor; }
+    #hy-assembly-v3 .hy-original g[data-object].hy-on { color:var(--hy-blue); stroke-width:3; }
+    #hy-assembly-v3 .hy-original .hy-on .hy-geometry { stroke-width:3; }
+    #hy-assembly-v3 .hy-original .hy-on rect { fill:var(--hy-soft); }
+    #hy-assembly-v3 .hy-meta { display:grid; grid-template-columns:78px minmax(0,1fr); gap:10px 12px; margin:0; }
+    #hy-assembly-v3 .hy-meta dt { color:var(--hy-muted); }
+    #hy-assembly-v3 .hy-meta dd { margin:0; overflow-wrap:anywhere; }
+    #hy-assembly-v3 .hy-quote { margin:14px 0; padding:12px; background:var(--hy-bg); border-left:3px solid var(--hy-line); }
+    #hy-assembly-v3 .hy-block { margin-top:18px; padding-top:15px; border-top:1px solid var(--hy-line); }
+    #hy-assembly-v3 .hy-bottom { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; padding:16px 0 0; }
+    #hy-assembly-v3 .hy-bottom span { color:var(--hy-muted); font-size:12px; }
+    #hy-assembly-v3 .hy-work { display:grid; grid-template-columns:170px minmax(0,1fr) 250px; gap:14px; align-items:start; }
+    #hy-assembly-v3 .hy-tree { display:grid; gap:8px; }
+    #hy-assembly-v3 .hy-tree button { text-align:left; width:100%; }
+    #hy-assembly-v3 .hy-tree small { display:block; color:var(--hy-muted); font-size:12px; margin-top:3px; }
+    #hy-assembly-v3 .hy-label { display:block; margin-bottom:7px; font-size:13px; font-weight:500; }
+    #hy-assembly-v3 select { width:100%; padding:9px 8px; border:1px solid var(--hy-line); border-radius:6px; background:var(--hy-paper); }
+    #hy-assembly-v3 .hy-warning { padding:12px; color:var(--hy-warn); background:var(--hy-warn-bg); border-radius:6px; margin-top:14px; }
+    #hy-assembly-v3 .hy-mini-list { padding-left:18px; margin:10px 0 0; }
+    #hy-assembly-v3 .hy-mini-list li { margin:7px 0; }
+    #hy-assembly-v3 .hy-output { display:grid; grid-template-columns:195px minmax(0,1fr); gap:16px; align-items:start; }
+    #hy-assembly-v3 .hy-docs { display:grid; gap:8px; }
+    #hy-assembly-v3 .hy-docs button { text-align:left; }
+    #hy-assembly-v3 .hy-docs small { display:block; margin-top:4px; font-size:12px; color:var(--hy-muted); }
+    #hy-assembly-v3 table { border-collapse:collapse; width:100%; }
+    #hy-assembly-v3 th,#hy-assembly-v3 td { text-align:left; padding:11px 9px; border-bottom:1px solid var(--hy-line); vertical-align:top; font-size:13px; }
+    #hy-assembly-v3 th { color:var(--hy-muted); font-weight:500; }
+    #hy-assembly-v3 .hy-table-scroll { overflow-x:auto; }
+    #hy-assembly-v3 .hy-doc-preview { padding:18px; }
+    #hy-assembly-v3 .hy-cut { width:100%; height:auto; display:block; color:var(--hy-blue); }
+    #hy-assembly-v3 .hy-status-line { display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-top:14px; }
+    #hy-assembly-v3 footer { border-top:1px solid var(--hy-line); padding:12px 22px; color:var(--hy-muted); font-size:12px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+    #hy-assembly-v3 .hy-screen-label { color:var(--hy-blue); font-size:12px; margin-bottom:4px; }
+    #hy-assembly-v3 .hy-notice { margin-top:12px; color:var(--hy-muted); font-size:12px; }
+    #hy-assembly-v3 .hy-pill { display:inline-block; color:var(--hy-blue); font-size:12px; }
+    #hy-assembly-v3 .hy-technical { width:100%; height:auto; display:block; color:var(--hy-blue); margin-top:12px; }
+    #hy-assembly-v3 .hy-technical text { fill:var(--hy-ink); font-family:system-ui,sans-serif; font-size:20px; }
+    #hy-assembly-v3 .hy-technical .hy-surface { fill:var(--hy-soft); stroke:currentColor; stroke-width:2; }
+    #hy-assembly-v3 .hy-technical .hy-measure { fill:none; stroke:var(--hy-muted); stroke-width:1; }
+    #hy-assembly-v3 .hy-technical .hy-reference { fill:none; stroke:var(--hy-muted); stroke-width:1; stroke-dasharray:5 4; }
+    #hy-assembly-v3 .hy-technical .hy-feature { fill:none; stroke:var(--hy-blue); stroke-width:2; }
+    #hy-assembly-v3 .hy-technical .hy-feature.hy-picked { stroke:var(--hy-warn); stroke-width:5; }
+    #hy-assembly-v3 .hy-technical .hy-hole { fill:var(--hy-paper); stroke:currentColor; stroke-width:2; }
+    #hy-assembly-v3 .hy-thumb { display:block; width:60px; height:44px; color:var(--hy-blue); }
+    #hy-assembly-v3 .hy-feature-row { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0; }
+    #hy-assembly-v3 .hy-sheetmeta { border-top:1px solid var(--hy-line); padding-top:10px; margin-top:12px; display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; font-size:12px; color:var(--hy-muted); }
+    #hy-assembly-v3 .hy-source-note { margin-top:12px; padding:10px 12px; background:var(--hy-bg); color:var(--hy-muted); font-size:12px; border-radius:5px; }
+    #hy-assembly-v3 .hy-entry { max-width:1040px; margin:auto; padding-top:42px; padding-bottom:42px; }
+    #hy-assembly-v3 .hy-entry-grid { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); gap:20px; }
+    #hy-assembly-v3 .hy-upload { border:1px dashed var(--hy-line); border-radius:8px; text-align:center; padding:36px 18px; background:var(--hy-bg); }
+    #hy-assembly-v3 .hy-upload[data-dragging="true"] { border-color:var(--hy-blue); background:var(--hy-soft); }
+    #hy-assembly-v3 .hy-upload svg { width:38px; height:38px; color:var(--hy-blue); margin:0 auto 12px; }
+    #hy-assembly-v3 .hy-upload button { margin-top:18px; }
+    #hy-assembly-v3 .hy-files { list-style:none; margin:16px 0 0; padding:0; }
+    #hy-assembly-v3 .hy-files li { display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--hy-line); }
+    #hy-assembly-v3 .hy-file-info { flex:1; min-width:0; overflow-wrap:anywhere; }
+    #hy-assembly-v3 .hy-file-info small { display:block; color:var(--hy-muted); margin-top:3px; }
+    #hy-assembly-v3 .hy-example-art { color:var(--hy-blue); width:100%; height:150px; display:block; margin:10px 0 18px; background:var(--hy-bg); border-radius:6px; }
+    #hy-assembly-v3 .hy-entry-status { color:var(--hy-muted); margin-top:14px; font-size:13px; }
+    #hy-assembly-v3 .hy-home { margin-left:auto; }
+    @media(max-width:620px) { #hy-assembly-v3 .hy-entry-grid { grid-template-columns:minmax(0,1fr); } #hy-assembly-v3 .hy-entry { padding-top:24px; padding-bottom:24px; } }
+    @media(max-width:620px) { #hy-assembly-v3 .hy-technical text { font-size:27px; } #hy-assembly-v3 .hy-cut text { font-size:24px; } }
+    @media(max-width:850px) { #hy-assembly-v3 .hy-work { grid-template-columns:150px minmax(0,1fr); } #hy-assembly-v3 .hy-work>aside { grid-column:1/-1; } }
+    @media(max-width:620px) { #hy-assembly-v3 .hy-page { padding:15px; } #hy-assembly-v3 .hy-grid,#hy-assembly-v3 .hy-work,#hy-assembly-v3 .hy-output { grid-template-columns:minmax(0,1fr); } #hy-assembly-v3 .hy-tree,#hy-assembly-v3 .hy-docs { display:flex; flex-wrap:wrap; } #hy-assembly-v3 .hy-tree button,#hy-assembly-v3 .hy-docs button { flex:1 1 120px; width:auto; } #hy-assembly-v3 .hy-original .hy-annotation { display:none; } #hy-assembly-v3 .hy-brand { padding-right:50px; } #hy-assembly-v3 header { padding:16px; } #hy-assembly-v3 h2 { font-size:19px; } #hy-assembly-v3 button { min-height:44px; } #hy-assembly-v3 select { font-size:16px; } }
+
+#hy-assembly-v3 .cursor-interaction { cursor: pointer; }

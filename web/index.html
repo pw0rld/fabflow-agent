@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>好运来 · AI 图纸识别</title>
+  <link rel="stylesheet" href="/workbench/recognition.css">
+  <link rel="stylesheet" href="/workbench/part-visuals.css">
+  <script src="/workbench/part-visuals.js" defer></script>
+  <script src="/workbench/recognition.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="主导航">
+      <a class="brand" href="#new"><span class="brand-mark">好</span><span><strong>好运来</strong><small>AI 图纸识别</small></span></a>
+      <nav><a href="#new" data-nav="new">上传图纸</a><a href="#tasks" data-nav="tasks">识别记录</a></nav>
+      <div class="sidebar-note">图纸识别演示<br>识别结果待人工核对</div>
+    </aside>
+    <div class="workspace">
+      <header class="topbar"><span id="breadcrumb">上传图纸</span><span class="internal-label">图纸识别</span></header>
+      <main id="content" tabindex="-1"><div class="loading">正在加载…</div></main>
+    </div>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <dialog id="review-dialog"><div id="dialog-content"></div></dialog>
+  <noscript>请启用浏览器 JavaScript 后使用图纸识别。</noscript>
+</body>
+</html>

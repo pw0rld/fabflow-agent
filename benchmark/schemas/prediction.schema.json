@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "raw",
+    "regions",
+    "parameters",
+    "ownership",
+    "bom",
+    "geometry",
+    "calculation"
+  ],
+  "properties": {
+    "adapter": {
+      "type": "string"
+    },
+    "raw": {
+      "type": "object"
+    },
+    "regions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "bbox"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "bbox": {
+            "type": "array",
+            "minItems": 4,
+            "maxItems": 4,
+            "items": {
+              "type": "number"
+            }
+          },
+          "part_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "parameters": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "value"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "value": {},
+          "unit": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "evidence": {
+            "type": "array"
+          }
+        }
+      }
+    },
+    "ownership": {
+      "type": "array"
+    },
+    "bom": {
+      "type": "array"
+    },
+    "geometry": {
+      "type": "array"
+    },
+    "calculation": {
+      "type": "array"
+    }
+  }
+}

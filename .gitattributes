@@ -1,0 +1,14 @@
+# Keep source files readable and binary/vendor/sample bytes unchanged.
+* text=auto
+*.py text eol=lf
+*.tsx text eol=lf
+*.ts text eol=lf
+*.css text eol=lf
+*.md text eol=lf
+*.md whitespace=-blank-at-eol
+*.wasm binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+samples/** -text -diff -whitespace
+web/cad-preview/vendor/** -text -diff -whitespace

@@ -1,0 +1,399 @@
+<div id="hy-assembly-v3">
+  <style>
+    #hy-assembly-v3 { --hy-paper:light-dark(#ffffff,#18212b); --hy-bg:light-dark(#f5f7fa,#101820); --hy-ink:light-dark(#25364a,#e5edf5); --hy-muted:light-dark(#617287,#a6b5c7); --hy-line:light-dark(#dbe3eb,#394956); --hy-blue:light-dark(#1c659e,#91c8f2); --hy-soft:light-dark(#eaf3fb,#20384b); --hy-warn:light-dark(#92652c,#e6bc7e); --hy-warn-bg:light-dark(#fff8ed,#342b20); --hy-selected:light-dark(#175985,#9ad3f7); color:var(--hy-ink); background:var(--hy-bg); font:14px/1.55 system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; border:1px solid var(--hy-line); border-radius:12px; overflow:hidden; }
+    #hy-assembly-v3 * { box-sizing:border-box; }
+    #hy-assembly-v3 [hidden] { display:none!important; }
+    #hy-assembly-v3 h2,#hy-assembly-v3 h3,#hy-assembly-v3 p { margin:0; }
+    #hy-assembly-v3 h2 { font-size:21px; font-weight:600; }
+    #hy-assembly-v3 h3 { font-size:15px; font-weight:600; }
+    #hy-assembly-v3 button,#hy-assembly-v3 select { font:inherit; color:inherit; }
+    #hy-assembly-v3 button { border:1px solid var(--hy-line); border-radius:7px; background:var(--hy-paper); padding:8px 12px; min-height:38px; }
+    #hy-assembly-v3 button:hover { background:var(--hy-soft); }
+    #hy-assembly-v3 button:focus-visible,#hy-assembly-v3 select:focus-visible { outline:2px solid var(--hy-blue); outline-offset:3px; }
+    #hy-assembly-v3 button.hy-primary { background:var(--hy-blue); color:var(--hy-paper); border-color:var(--hy-blue); }
+    #hy-assembly-v3 button[aria-pressed="true"] { border-color:var(--hy-blue); background:var(--hy-soft); }
+    #hy-assembly-v3 header { padding:20px 22px 14px; background:var(--hy-paper); border-bottom:1px solid var(--hy-line); }
+    #hy-assembly-v3 .hy-brand { display:flex; align-items:center; gap:12px; padding-right:82px; flex-wrap:wrap; }
+    #hy-assembly-v3 .hy-brand strong { letter-spacing:1px; }
+    #hy-assembly-v3 .hy-tag { font-size:12px; color:var(--hy-warn); background:var(--hy-warn-bg); padding:3px 7px; border-radius:4px; }
+    #hy-assembly-v3 .hy-steps { display:flex; flex-wrap:wrap; gap:8px; margin-top:18px; }
+    #hy-assembly-v3 .hy-steps button { border-color:transparent; background:transparent; color:var(--hy-muted); }
+    #hy-assembly-v3 .hy-steps button[aria-current="step"] { color:var(--hy-blue); background:var(--hy-soft); }
+    #hy-assembly-v3 .hy-page { padding:22px; }
+    #hy-assembly-v3 .hy-heading { display:flex; align-items:start; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:18px; }
+    #hy-assembly-v3 .hy-sub { color:var(--hy-muted); font-size:13px; margin-top:5px; }
+    #hy-assembly-v3 .hy-grid { display:grid; grid-template-columns:minmax(0,1.9fr) minmax(230px,1fr); gap:18px; }
+    #hy-assembly-v3 .hy-panel { background:var(--hy-paper); border:1px solid var(--hy-line); border-radius:8px; min-width:0; }
+    #hy-assembly-v3 .hy-panel-title { padding:12px 15px; border-bottom:1px solid var(--hy-line); display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; }
+    #hy-assembly-v3 .hy-body { padding:15px; }
+    #hy-assembly-v3 .hy-original { color:var(--hy-ink); display:block; width:100%; height:auto; background:var(--hy-paper); }
+    #hy-assembly-v3 .hy-original .hy-geometry { fill:none; stroke:currentColor; stroke-width:1.5; }
+    #hy-assembly-v3 .hy-original .hy-dashed { stroke-dasharray:5 4; }
+    #hy-assembly-v3 .hy-original text { font-family:Arial,sans-serif; fill:currentColor; }
+    #hy-assembly-v3 .hy-original g[data-object].hy-on { color:var(--hy-blue); stroke-width:3; }
+    #hy-assembly-v3 .hy-original .hy-on .hy-geometry { stroke-width:3; }
+    #hy-assembly-v3 .hy-original .hy-on rect { fill:var(--hy-soft); }
+    #hy-assembly-v3 .hy-meta { display:grid; grid-template-columns:78px minmax(0,1fr); gap:10px 12px; margin:0; }
+    #hy-assembly-v3 .hy-meta dt { color:var(--hy-muted); }
+    #hy-assembly-v3 .hy-meta dd { margin:0; overflow-wrap:anywhere; }
+    #hy-assembly-v3 .hy-quote { margin:14px 0; padding:12px; background:var(--hy-bg); border-left:3px solid var(--hy-line); }
+    #hy-assembly-v3 .hy-block { margin-top:18px; padding-top:15px; border-top:1px solid var(--hy-line); }
+    #hy-assembly-v3 .hy-bottom { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; padding:16px 0 0; }
+    #hy-assembly-v3 .hy-bottom span { color:var(--hy-muted); font-size:12px; }
+    #hy-assembly-v3 .hy-work { display:grid; grid-template-columns:170px minmax(0,1fr) 250px; gap:14px; align-items:start; }
+    #hy-assembly-v3 .hy-tree { display:grid; gap:8px; }
+    #hy-assembly-v3 .hy-tree button { text-align:left; width:100%; }
+    #hy-assembly-v3 .hy-tree small { display:block; color:var(--hy-muted); font-size:12px; margin-top:3px; }
+    #hy-assembly-v3 .hy-label { display:block; margin-bottom:7px; font-size:13px; font-weight:500; }
+    #hy-assembly-v3 select { width:100%; padding:9px 8px; border:1px solid var(--hy-line); border-radius:6px; background:var(--hy-paper); }
+    #hy-assembly-v3 .hy-warning { padding:12px; color:var(--hy-warn); background:var(--hy-warn-bg); border-radius:6px; margin-top:14px; }
+    #hy-assembly-v3 .hy-mini-list { padding-left:18px; margin:10px 0 0; }
+    #hy-assembly-v3 .hy-mini-list li { margin:7px 0; }
+    #hy-assembly-v3 .hy-output { display:grid; grid-template-columns:195px minmax(0,1fr); gap:16px; align-items:start; }
+    #hy-assembly-v3 .hy-docs { display:grid; gap:8px; }
+    #hy-assembly-v3 .hy-docs button { text-align:left; }
+    #hy-assembly-v3 .hy-docs small { display:block; margin-top:4px; font-size:12px; color:var(--hy-muted); }
+    #hy-assembly-v3 table { border-collapse:collapse; width:100%; }
+    #hy-assembly-v3 th,#hy-assembly-v3 td { text-align:left; padding:11px 9px; border-bottom:1px solid var(--hy-line); vertical-align:top; font-size:13px; }
+    #hy-assembly-v3 th { color:var(--hy-muted); font-weight:500; }
+    #hy-assembly-v3 .hy-table-scroll { overflow-x:auto; }
+    #hy-assembly-v3 .hy-doc-preview { padding:18px; }
+    #hy-assembly-v3 .hy-cut { width:100%; height:auto; display:block; color:var(--hy-blue); }
+    #hy-assembly-v3 .hy-status-line { display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-top:14px; }
+    #hy-assembly-v3 footer { border-top:1px solid var(--hy-line); padding:12px 22px; color:var(--hy-muted); font-size:12px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+    #hy-assembly-v3 .hy-screen-label { color:var(--hy-blue); font-size:12px; margin-bottom:4px; }
+    #hy-assembly-v3 .hy-notice { margin-top:12px; color:var(--hy-muted); font-size:12px; }
+    #hy-assembly-v3 .hy-pill { display:inline-block; color:var(--hy-blue); font-size:12px; }
+    #hy-assembly-v3 .hy-technical { width:100%; height:auto; display:block; color:var(--hy-blue); margin-top:12px; }
+    #hy-assembly-v3 .hy-technical text { fill:var(--hy-ink); font-family:system-ui,sans-serif; font-size:20px; }
+    #hy-assembly-v3 .hy-technical .hy-surface { fill:var(--hy-soft); stroke:currentColor; stroke-width:2; }
+    #hy-assembly-v3 .hy-technical .hy-measure { fill:none; stroke:var(--hy-muted); stroke-width:1; }
+    #hy-assembly-v3 .hy-technical .hy-reference { fill:none; stroke:var(--hy-muted); stroke-width:1; stroke-dasharray:5 4; }
+    #hy-assembly-v3 .hy-technical .hy-feature { fill:none; stroke:var(--hy-blue); stroke-width:2; }
+    #hy-assembly-v3 .hy-technical .hy-feature.hy-picked { stroke:var(--hy-warn); stroke-width:5; }
+    #hy-assembly-v3 .hy-technical .hy-hole { fill:var(--hy-paper); stroke:currentColor; stroke-width:2; }
+    #hy-assembly-v3 .hy-thumb { display:block; width:60px; height:44px; color:var(--hy-blue); }
+    #hy-assembly-v3 .hy-feature-row { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0; }
+    #hy-assembly-v3 .hy-sheetmeta { border-top:1px solid var(--hy-line); padding-top:10px; margin-top:12px; display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; font-size:12px; color:var(--hy-muted); }
+    #hy-assembly-v3 .hy-source-note { margin-top:12px; padding:10px 12px; background:var(--hy-bg); color:var(--hy-muted); font-size:12px; border-radius:5px; }
+    #hy-assembly-v3 .hy-entry { max-width:1040px; margin:auto; padding-top:42px; padding-bottom:42px; }
+    #hy-assembly-v3 .hy-entry-grid { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); gap:20px; }
+    #hy-assembly-v3 .hy-upload { border:1px dashed var(--hy-line); border-radius:8px; text-align:center; padding:36px 18px; background:var(--hy-bg); }
+    #hy-assembly-v3 .hy-upload[data-dragging="true"] { border-color:var(--hy-blue); background:var(--hy-soft); }
+    #hy-assembly-v3 .hy-upload svg { width:38px; height:38px; color:var(--hy-blue); margin:0 auto 12px; }
+    #hy-assembly-v3 .hy-upload button { margin-top:18px; }
+    #hy-assembly-v3 .hy-files { list-style:none; margin:16px 0 0; padding:0; }
+    #hy-assembly-v3 .hy-files li { display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--hy-line); }
+    #hy-assembly-v3 .hy-file-info { flex:1; min-width:0; overflow-wrap:anywhere; }
+    #hy-assembly-v3 .hy-file-info small { display:block; color:var(--hy-muted); margin-top:3px; }
+    #hy-assembly-v3 .hy-example-art { color:var(--hy-blue); width:100%; height:150px; display:block; margin:10px 0 18px; background:var(--hy-bg); border-radius:6px; }
+    #hy-assembly-v3 .hy-entry-status { color:var(--hy-muted); margin-top:14px; font-size:13px; }
+    #hy-assembly-v3 .hy-home { margin-left:auto; }
+    @media(max-width:620px) { #hy-assembly-v3 .hy-entry-grid { grid-template-columns:minmax(0,1fr); } #hy-assembly-v3 .hy-entry { padding-top:24px; padding-bottom:24px; } }
+    @media(max-width:620px) { #hy-assembly-v3 .hy-technical text { font-size:27px; } #hy-assembly-v3 .hy-cut text { font-size:24px; } }
+    @media(max-width:850px) { #hy-assembly-v3 .hy-work { grid-template-columns:150px minmax(0,1fr); } #hy-assembly-v3 .hy-work>aside { grid-column:1/-1; } }
+    @media(max-width:620px) { #hy-assembly-v3 .hy-page { padding:15px; } #hy-assembly-v3 .hy-grid,#hy-assembly-v3 .hy-work,#hy-assembly-v3 .hy-output { grid-template-columns:minmax(0,1fr); } #hy-assembly-v3 .hy-tree,#hy-assembly-v3 .hy-docs { display:flex; flex-wrap:wrap; } #hy-assembly-v3 .hy-tree button,#hy-assembly-v3 .hy-docs button { flex:1 1 120px; width:auto; } #hy-assembly-v3 .hy-original .hy-annotation { display:none; } #hy-assembly-v3 .hy-brand { padding-right:50px; } #hy-assembly-v3 header { padding:16px; } #hy-assembly-v3 h2 { font-size:19px; } #hy-assembly-v3 button { min-height:44px; } #hy-assembly-v3 select { font-size:16px; } }
+  </style>
+  <header>
+    <div class="hy-brand"><strong>好运来 · 工程拆图</strong><span class="hy-tag">演示版</span><button type="button" class="hy-home cursor-interaction" data-home hidden>返回首页</button></div>
+    <nav class="hy-steps" aria-label="订单工程流程" hidden>
+      <button type="button" class="cursor-interaction" data-step="input" aria-current="step">① 原始资料</button>
+      <button type="button" class="cursor-interaction" data-step="engineering">② 拆件与补图</button>
+      <button type="button" class="cursor-interaction" data-step="output">③ 工程资料包</button>
+    </nav>
+  </header>
+  <main>
+    <section class="hy-page hy-entry" data-page="home">
+      <div class="hy-heading"><div><h2>上传图纸</h2><p class="hy-sub">选择订单图纸，或打开演示样例查看拆图流程。</p></div></div>
+      <div class="hy-entry-grid">
+        <div class="hy-panel"><div class="hy-body">
+          <div class="hy-upload" data-dropzone>
+            <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M9 25v9h22v-9M20 27V6M12 14l8-8 8 8"/></svg>
+            <h3>将图纸拖到这里</h3><p class="hy-sub">DWG、DXF、STEP、PDF 或图片，可选择多份文件</p>
+            <button type="button" class="hy-primary cursor-interaction" data-choose-files>选择文件</button>
+            <input id="hy-upload-files" type="file" aria-label="选择图纸文件" accept=".dwg,.dxf,.step,.stp,.pdf,.png,.jpg,.jpeg,.webp" multiple hidden>
+          </div>
+          <ul class="hy-files" id="hy-selected-files" aria-label="已选文件"></ul>
+          <p class="hy-entry-status" id="hy-upload-status" role="status">当前演示版仅展示文件选择，暂未接入上传与解析。</p>
+        </div></div>
+        <aside class="hy-panel"><div class="hy-panel-title"><h3>演示样例</h3><span class="hy-pill">固定模拟数据</span></div><div class="hy-body">
+          <svg class="hy-example-art" viewBox="0 0 320 150" fill="none" stroke="currentColor" stroke-width="1.6" role="img" aria-label="控制机箱样例缩略图"><path d="M88 65l96-34 61 29-96 35ZM88 65v48l61 30 96-35V60M149 95v48M83 45l96-34 64 28-96 35Z"/><path d="M70 67V41m-6 6 6-6 6 6M255 68V42m-6 6 6-6 6 6" stroke-dasharray="4 3"/></svg>
+          <h3>不锈钢控制机箱</h3><p class="hy-sub">总装图 → 拆件与补图 → 工程资料包</p>
+          <p class="hy-notice">物料图表与分工序图纸；含 SPCC 壳体、孔加工板的补充演示</p>
+          <button type="button" class="cursor-interaction" data-open-demo style="margin-top:20px">查看演示样例 →</button>
+        </div></aside>
+      </div>
+    </section>
+    <section class="hy-page" data-page="input" hidden>
+      <div class="hy-heading"><div><div class="hy-screen-label">客户资料</div><h2>总装图与订单</h2><p class="hy-sub">控制机箱 · 10 套 · 零件图未提供 · 展开图未提供</p></div></div>
+      <div class="hy-grid">
+        <div class="hy-panel"><div class="hy-panel-title"><h3>客户总装图</h3><span class="hy-pill">HY-D02 · 模拟 DXF</span></div><div data-drawing="input"></div><p class="hy-notice" style="padding:0 15px 12px">①②③为演示定位编号；对象归组为手工编排。</p></div>
+        <aside class="hy-panel"><div class="hy-panel-title"><h3>订单资料</h3></div><div class="hy-body">
+          <dl class="hy-meta"><dt>原件</dt><dd>HY-D02-客户总装-模拟.dxf</dd><dt>数量</dt><dd>10 套（订单说明）</dd><dt>材料</dt><dd>SS304（总装备注）</dd></dl>
+          <div class="hy-quote">请按总装图制作 10 套控制机箱。外露焊缝焊后修整。仅有总装，零件图及展开图由工厂补齐。</div>
+          <div class="hy-block"><h3>待补工程信息</h3><ul class="hy-mini-list"><li>主体拆分方案</li><li>折弯展开依据</li><li>支架孔定位尺寸</li></ul></div>
+          <p class="hy-notice">模拟样例 · 图纸与 DXF 对应</p>
+        </div></aside>
+      </div>
+      <div class="hy-bottom"><span>输入：订单说明＋一份总装 CAD</span><button type="button" class="hy-primary cursor-interaction" data-go="engineering">查看拆图演示 →</button></div>
+    </section>
+    <section class="hy-page" data-page="engineering" hidden>
+      <div class="hy-heading"><div><div class="hy-screen-label">工程处理</div><h2>拆件与补图</h2><p class="hy-sub">选择零件与工序，查看位置、参数和作业要求。</p></div></div>
+      <div id="hy-process-workbench" data-process-ui></div>
+      <details id="hy-original-details" class="hy-block"><summary>原图与拆分方案 · SS304 原样例</summary>
+      <div class="hy-work">
+        <div><h3>结构部件</h3><div class="hy-tree hy-block">
+          <button type="button" class="cursor-interaction" data-part="body" aria-pressed="true">① 机箱主体<small>制造构成待定</small></button>
+          <button type="button" class="cursor-interaction" data-part="lid" aria-pressed="false">② 上盖板<small>原图有独立尺寸</small></button>
+          <button type="button" class="cursor-interaction" data-part="bracket" aria-pressed="false">③ 安装支架<small>示意 2 件 · 待核对</small></button>
+        </div></div>
+        <div class="hy-panel"><div class="hy-panel-title"><h3>原图定位</h3><span class="hy-pill" id="hy-selected-label">① 机箱主体</span></div><div data-drawing="engineering"></div></div>
+        <aside class="hy-panel"><div class="hy-panel-title"><h3 id="hy-inspector-title">主体制造方案</h3></div><div class="hy-body" id="hy-inspector"></div></aside>
+      </div>
+      <div class="hy-panel hy-block"><div class="hy-body"><h3>制造零件清单</h3><div id="hy-decomposition" aria-live="polite"></div></div></div>
+      </details>
+      <div class="hy-bottom"><button type="button" class="cursor-interaction" data-go="input">← 原始资料</button><button type="button" class="hy-primary cursor-interaction" data-go="output">查看工程资料包 →</button></div>
+    </section>
+    <section class="hy-page" data-page="output" hidden>
+      <div class="hy-heading"><div><div class="hy-screen-label">工程资料草稿</div><h2>工程资料包</h2><p class="hy-sub" id="hy-output-summary">5 类模拟成果 · 草稿待校核</p></div></div>
+      <div class="hy-output">
+        <nav class="hy-docs" aria-label="工程资料类型">
+          <span class="hy-sub">当前工序样例</span>
+          <button type="button" class="cursor-interaction" data-doc="route" aria-pressed="false">工序与物料汇总<small>工艺路线 / 辅料 / 计量口径</small></button>
+          <button type="button" class="cursor-interaction" data-doc="cards" aria-pressed="false">工序图与作业卡<small>位置、参数与加工要求</small></button>
+          <span class="hy-sub">SS304 原样例图纸</span>
+          <button type="button" class="cursor-interaction" data-doc="bom" aria-pressed="true">物料图表<small>给工程 / 领料</small></button>
+          <button type="button" class="cursor-interaction" data-doc="cut" aria-pressed="false">激光切割图<small>给排版工程师</small></button>
+          <button type="button" class="cursor-interaction" data-doc="bend" aria-pressed="false">折弯图<small>给折弯工位</small></button>
+          <button type="button" class="cursor-interaction" data-doc="drill" aria-pressed="false">钻孔图<small>给钻孔工位</small></button>
+          <button type="button" class="cursor-interaction" data-doc="weld" aria-pressed="false">焊接作业图<small>给焊接工位</small></button>
+        </nav>
+        <div class="hy-panel"><div class="hy-panel-title"><h3 id="hy-doc-title">物料图表</h3><span class="hy-pill" id="hy-doc-state">模拟草稿 · 待校核</span></div><div class="hy-doc-preview" id="hy-doc-preview"></div></div>
+      </div>
+      <div class="hy-bottom"><button type="button" class="cursor-interaction" data-go="engineering">← 回到拆件与补图</button><span>文件状态：分别校核</span></div>
+    </section>
+  </main>
+  <footer><span id="hy-footer-context">工程拆图工作台</span><span>演示版 · 未调用 AI</span></footer>
+  <script type="application/json" id="hy-assembly-source">
+{"id":"HY-D02","sets":10,"sourceKind":"artificial-assembly-design-sample","units":"mm","width":700,"height":500,"groups":[{"part":"body","lines":[[45,70,365,70],[45,70,45,147],[365,70,365,147],[45,147,365,147],[420,70,640,70],[420,70,420,147],[640,70,640,147],[420,147,640,147]]},{"part":"lid","lines":[[45,150,365,150],[420,150,640,150],[45,215,365,215],[365,215,365,435],[365,435,45,435],[45,435,45,215]]},{"part":"bracket","lines":[[65,80,85,80],[85,80,85,125],[85,125,80,125],[80,125,80,85],[80,85,65,85],[325,80,345,80],[325,80,325,125],[325,125,330,125],[330,125,330,85],[330,85,345,85]],"circles":[[82.5,97,3.25],[82.5,115,3.25],[327.5,97,3.25],[327.5,115,3.25]]}],"notes":[[45,480,18,"HY-D02 / CUSTOMER ASSEMBLY / DEMO"],[45,455,14,"TOP VIEW - LID 320 x 220 x 1.5"],[45,185,14,"FRONT VIEW - OVERALL 320 x 220 x 80"],[420,185,14,"SIDE VIEW"],[420,425,13,"ALL DIMENSIONS IN MM"],[420,400,13,"MATERIAL: SS304"],[420,375,13,"BODY / LID: t1.5"],[420,350,13,"BRACKETS: t2 / 2 PLACES"],[420,325,13,"EACH BRACKET: 2 x D6.5 THRU"],[420,300,13,"HOLE POSITIONS SCHEMATIC"],[420,275,13,"VERIFY HOLE DATUM / SPACING"],[420,250,13,"BODY FABRICATION: NOT DEFINED"],[45,35,14,"DRESS EXPOSED WELDS; WELD SPEC: TO BE CONFIRMED"],[45,12,12,"ARTIFICIAL SAMPLE - NOT A MANUFACTURING DRAWING"]]}
+  </script>
+  <script type="application/json" id="hy-engineering-supplement">
+{"artificial":true,"origin":"hand-authored-demo-completion","engineering_verified":false,"bracket":{"outside_legs_mm":[60,40],"width_mm":30,"angle_degrees":90,"inner_radius_mm":2,"hole_edge_mm":20,"hole_pitch_mm":20,"hole_offset_mm":15},"weld":{"continuity":"continuous-demo-assumption","method":null,"size":null,"quality_requirement":null}}
+  </script>
+  <script>
+    (() => {
+      const root = document.getElementById('hy-assembly-v3');
+      const source = JSON.parse(root.querySelector('#hy-assembly-source').textContent);
+      const supplement = JSON.parse(root.querySelector('#hy-engineering-supplement').textContent);
+      const validPlans = ['unknown','folded','welded'];
+      let state = { step:'home', part:'body', plan:'unknown', doc:'bom', seams:'corners' };
+      let selectedFiles = [];
+      const fileInput = root.querySelector('#hy-upload-files');
+      const acceptedExtensions = new Set(['dwg','dxf','step','stp','pdf','png','jpg','jpeg','webp']);
+      const saved = window.openai?.widgetState?.privateContent;
+      function restore(value) {
+        if (!value || typeof value !== 'object') return;
+        if (['home','input','engineering','output'].includes(value.step)) state.step=value.step;
+        if (['body','lid','bracket'].includes(value.part)) state.part=value.part;
+        if (validPlans.includes(value.plan)) state.plan=value.plan;
+        if (['bom','cut','bend','drill','weld','route','cards'].includes(value.doc)) state.doc=value.doc;
+        if (['corners','base'].includes(value.seams)) state.seams=value.seams;
+      }
+      restore(saved);
+      const names = {body:'① 机箱主体',lid:'② 上盖板',bracket:'③ 安装支架'};
+      const labels = {bom:'物料图表',cut:'激光切割图',bend:'折弯图',drill:'钻孔图',weld:'焊接作业图',route:'工序与物料汇总',cards:'工序图与作业卡'};
+      const processes = createProcessDemo(root, {
+        onPart: part => { state.part=part; render(); },
+        onDocument: doc => { state.doc=doc; state.step='output'; render(); }
+      });
+      function persist() {
+        if(window.openai?.setWidgetState) window.openai.setWidgetState({modelContent:{design:'assembly-first-v3',selectedEngineeringPlan:state.plan,selectedOutput:state.doc},privateContent:{...state}}).catch(()=>{});
+      }
+      function sourceSvg(selected) {
+        const y = n => 500-n;
+        const art = source.groups.map(group=>`<g data-object="${group.part}" class="${selected===group.part?'hy-on':''}">${group.lines.map(row=>`<line class="hy-geometry" x1="${row[0]}" y1="${y(row[1])}" x2="${row[2]}" y2="${y(row[3])}"/>`).join('')}${(group.circles||[]).map(row=>`<circle class="hy-geometry" cx="${row[0]}" cy="${y(row[1])}" r="${row[2]}"/>`).join('')}</g>`).join('');
+        const notes = source.notes.map(row=>`<text class="hy-annotation" x="${row[0]}" y="${y(row[1])}" font-size="${row[2]}">${row[3]}</text>`).join('');
+        const markers = [[22,109,'1'],[22,150,'2'],[82,58,'3']].map(row=>`<text x="${row[0]}" y="${y(row[1])}" font-size="24">${row[2]}</text>`).join('');
+        return `<svg class="hy-original" viewBox="0 0 740 510" role="img" aria-label="模拟总装：盖板俯视、总装正视与侧视。总装320乘220乘80毫米，材料SS304，主体制造方案、孔定位和焊接要求待补。">${art}${notes}${markers}</svg>`;
+      }
+      function rows(plan=state.plan) {
+        const base = [['上盖板','1.5',1],['安装支架','2',2]];
+        if(plan==='folded')return [['一体盒体','1.5',1],...base];
+        if(plan==='welded')return [['底板','1.5',1],['长侧板','1.5',2],['短侧板','1.5',2],...base];
+        return [];
+      }
+      function thumb(name) {
+        const path=name==='一体盒体'?'M8 15L30 6L52 16L30 26ZM8 15V32L30 42L52 32V16M30 26V42':name==='安装支架'?'M15 5H20V30H50V35H15Z':'M8 15L38 5L54 20L24 32Z';
+        return `<svg class="hy-thumb" viewBox="0 0 60 44" role="img" aria-label="${name}示意"><path d="${path}" fill="var(--hy-soft)" stroke="currentColor" stroke-width="1.5"/></svg>`;
+      }
+      function dim(x1,y1,x2,y2,label,tx,ty) {
+        const horizontal=y1===y2;
+        return `<path class="hy-measure" d="M${x1} ${y1}L${x2} ${y2}M${x1-(horizontal?0:5)} ${y1-(horizontal?5:0)}l${horizontal?0:10} ${horizontal?10:0}M${x2-(horizontal?0:5)} ${y2-(horizontal?5:0)}l${horizontal?0:10} ${horizontal?10:0}"/><text x="${tx}" y="${ty}" text-anchor="middle">${label}</text>`;
+      }
+      function sheet(kind,art) {
+        return `<svg class="hy-technical" data-drawing-kind="${kind}" viewBox="0 0 560 360" role="img" aria-label="${labels[kind]}模拟草稿，非生产图">${art}</svg>`;
+      }
+      function sheetMeta(code) {
+        return `<div class="hy-sheetmeta"><span>HY-D02 / ${code} / REV A</span><span>单位 mm · 示意，不按比例 · DEMO</span></div>`;
+      }
+      function bendDrawing() {
+        const b=supplement.bracket;
+        return sheet('bend',`<path class="hy-surface" d="M110 60H120V240Q120 250 130 250H410V260H130Q110 260 110 240Z"/>
+          <path class="hy-feature hy-picked" d="M120 240Q120 250 130 250"/>
+          <path class="hy-feature" d="M150 205A45 45 0 0 1 195 250"/>
+          <text x="205" y="223">${b.angle_degrees}°</text><path class="hy-reference" d="M195 170L137 239"/>
+          <text x="205" y="167">B01</text><text x="155" y="290">R${b.inner_radius_mm}</text>
+          ${dim(110,315,410,315,String(b.outside_legs_mm[0]),260,343)}
+          ${dim(72,60,72,260,String(b.outside_legs_mm[1]),40,166)}
+          <text x="300" y="110">宽 ${b.width_mm}</text><text x="300" y="145">t2</text>`);
+      }
+      function drillDrawing() {
+        const b=supplement.bracket;
+        const holes=[b.hole_edge_mm,b.hole_edge_mm+b.hole_pitch_mm];
+        const marks=holes.map((x,index)=>{
+          const cx=100+x*6,cy=280-b.hole_offset_mm*6;
+          return `<circle class="hy-hole" cx="${cx}" cy="${cy}" r="19.5"/>
+            <path class="hy-reference" d="M${cx-34} ${cy}H${cx+34}M${cx} ${cy-34}V${cy+34}"/>
+            <text x="${cx}" y="247" text-anchor="middle">H0${index+1}</text>`;
+        }).join('');
+        return sheet('drill',`<rect class="hy-surface" x="100" y="100" width="360" height="180"/>${marks}
+          ${dim(100,60,220,60,String(b.hole_edge_mm),160,40)}
+          ${dim(220,60,340,60,String(b.hole_pitch_mm),280,40)}
+          ${dim(100,315,460,315,'60',280,344)}
+          ${dim(65,100,65,280,String(b.width_mm),35,198)}
+          ${dim(503,190,503,280,String(b.hole_offset_mm),528,244)}
+          <path class="hy-measure" d="M100 100V48M220 100V48M340 100V48M100 280V325M460 280V325M460 190H512M460 280H512"/>
+          <path class="hy-feature" d="M430 125L356 178"/><text x="438" y="113" text-anchor="middle">Ø6.5</text>
+          <text x="84" y="303">A</text>`);
+      }
+      function weldDrawing(plan) {
+        const base=plan==='welded';
+        const picked=state.seams==='base'&&base?'base':'corners';
+        const seam=(d,group,dashed=false)=>`<path class="hy-feature ${picked===group?'hy-picked':''}" d="${d}"${dashed?' stroke-dasharray="7 5"':''}/>`;
+        return sheet('weld',`<path class="hy-surface" d="M130 95L270 175V290L130 210Z"/>
+          <path class="hy-surface" d="M270 175L440 115V230L270 290Z"/>
+          <path class="hy-feature" d="M130 95L300 40L440 115M140 98L300 52L427 115L270 162Z"/>
+          ${seam('M130 95V210M270 175V290M440 115V230','corners')}
+          ${seam('M300 40V155','corners',true)}
+          ${base?seam('M130 210L270 290L440 230','base')+seam('M130 210L300 155L440 230','base',true):''}
+          <path class="hy-measure" d="M92 152L130 152M290 317L270 278M477 196L440 184M347 35L300 70"/>
+          <text x="52" y="156">W01</text><text x="288" y="340">W02</text><text x="478" y="201">W03</text><text x="350" y="34">W04</text>
+          ${base?'<text x="40" y="311">W05–W08</text><path class="hy-measure" d="M135 296L190 245"/>':''}`);
+      }
+      function inspector() {
+        const target=root.querySelector('#hy-inspector');
+        root.querySelector('#hy-inspector-title').textContent=state.part==='body'?'主体制造方案':state.part==='lid'?'盖板参数':'支架参数';
+        if(state.part==='body') target.innerHTML=`<span class="hy-pill">图纸参数</span><p>SS304 · t1.5</p><p class="hy-sub">总装包络：320 × 220 × 80 mm；本件尺寸待补。</p><div class="hy-block"><label class="hy-label" for="hy-fabrication">采用的工程方案</label><select id="hy-fabrication"><option value="unknown">尚未决定</option><option value="folded">一体折弯盒体</option><option value="welded">底板＋侧板拼焊</option></select></div><div class="hy-warning">${state.plan==='unknown'?'主体制造方案待确认。':state.plan==='folded'?'待补：内 R、展开依据、零件尺寸链。':'待补：板件尺寸、接缝、连接要求。'}</div>`;
+        else if(state.part==='lid') target.innerHTML='<span class="hy-pill">图纸参数</span><p>SS304 · 320 × 220 × 1.5 mm</p><div class="hy-block"><h3>关联资料</h3><p class="hy-sub">切割图草稿</p><p class="hy-sub">折弯：不适用；加工与装配条件待校核。</p></div><button type="button" class="cursor-interaction" data-preview-cut style="margin-top:14px">查看切割图 →</button>';
+        else target.innerHTML='<span class="hy-pill">图纸参数</span><p>SS304 · t2 · 示意 2 件</p><p class="hy-sub">每件 2 × Ø6.5 通孔</p><div class="hy-warning">孔定位基准与尺寸未标注。</div><div class="hy-block"><h3>待补参数</h3><p class="hy-sub">孔距、边距、加工面、折弯几何。</p><p class="hy-sub">折弯图、钻孔图：已提供模拟补图示例。</p></div>';
+        const select=target.querySelector('select');if(select)select.value=state.plan;
+      }
+      function decomposition() {
+        const r=rows();
+        root.querySelector('#hy-decomposition').innerHTML=r.length?`<p style="margin-top:8px">${r.map(row=>row[0]+' ×'+row[2]).join('　·　')}</p><p class="hy-sub">按当前演示方案：${r.length} 类 · ${r.reduce((n,row)=>n+row[2],0)} 件/套 · 10 套共 ${r.reduce((n,row)=>n+row[2]*10,0)} 件</p><p class="hy-notice">几何与工艺状态：待补充</p>`:'<p class="hy-sub">主体拆分方案待确认，制造零件数量待定。</p>';
+      }
+      function output() {
+        root.querySelector('#hy-doc-title').textContent=labels[state.doc];
+        const preview=root.querySelector('#hy-doc-preview');
+        const status=root.querySelector('#hy-doc-state');
+        const previewPlan=state.plan==='unknown'?'folded':state.plan;
+        root.querySelector('#hy-output-summary').textContent='工序图、作业卡与原样例图纸 · 模拟草稿待校核';
+        if(state.doc==='route'||state.doc==='cards'){
+          status.textContent='模拟草稿 · 待校核';preview.innerHTML='<div data-process-output data-process-ui></div>';return;
+        }
+        if(state.doc==='bom'){
+          const r=rows(previewPlan);status.textContent='模拟草稿 · 待校核';
+          preview.innerHTML=`<div class="hy-status-line"><h3>${previewPlan==='folded'?'一体折弯方案':'分板拼焊方案'}</h3><span class="hy-pill">${r.length} 类 · ${r.reduce((n,row)=>n+row[2]*source.sets,0)} 件</span></div>
+            <div class="hy-table-scroll"><table data-output-bom><thead><tr><th>示意</th><th>制造零件</th><th>材料 / 板厚</th><th>每套</th><th>10 套</th></tr></thead><tbody>${r.map(row=>`<tr><td>${thumb(row[0])}</td><td>${row[0]}</td><td>SS304 / ${row[1]} mm</td><td>${row[2]}</td><td>${row[2]*source.sets}</td></tr>`).join('')}</tbody></table></div>
+            <p class="hy-source-note">工程拆分：${state.plan==='unknown'?'一体折弯为预览示例，尚未采用。':'当前采用的模拟方案；几何与工艺待校核。'} 数量按 10 套汇总。</p>${sheetMeta('BOM')}`;
+        } else if(state.doc==='cut') {
+          status.textContent='模拟草稿 · 待校核';
+          preview.innerHTML='<div class="hy-status-line"><h3>上盖板 / SS304 · t1.5 · 10 件</h3><span class="hy-pill">尺寸来源：总装标注</span></div><svg class="hy-cut" data-drawing-kind="cut" viewBox="0 0 480 350" role="img" aria-label="盖板切割草稿，闭合矩形320乘220毫米，无附加孔，模拟非生产图"><rect x="80" y="50" width="320" height="220" fill="none" stroke="currentColor" stroke-width="2"/><path d="M80 300H400M50 50V270" stroke="currentColor" fill="none"/><text x="240" y="325" text-anchor="middle" font-size="19" fill="currentColor">320 mm</text><text x="24" y="165" transform="rotate(-90 24 165)" text-anchor="middle" font-size="19" fill="currentColor">220 mm</text><text x="240" y="165" text-anchor="middle" font-size="17" fill="currentColor">DEMO · 待工程校核</text></svg><p class="hy-sub">用途：激光排版；内容：平面轮廓、材料、板厚、数量。</p>'+sheetMeta('LID-CUT');
+        } else if(state.doc==='bend') {
+          status.textContent='模拟草稿 · 待校核';
+          preview.innerHTML=`<h3>安装支架 / B01</h3>${bendDrawing()}<div class="hy-feature-row"><span class="hy-tag">B01 · 90° · 向上</span><span class="hy-pill">SS304 · t2 · 20 件</span></div><p class="hy-source-note">原图：SS304、t2。模拟补图：外边长 60/40、宽 30、内角 90°、内 R2。</p><div class="hy-status-line"><span class="hy-sub">待核对：零件尺寸链、角度口径、内 R、展开依据。</span><button type="button" class="cursor-interaction" data-fix="bracket">查看支架参数 →</button></div>${sheetMeta('BRACKET-BEND')}`;
+        } else if(state.doc==='drill') {
+          status.textContent='模拟草稿 · 待校核';
+          preview.innerHTML=`<h3>安装支架 / H01、H02</h3>${drillDrawing()}<div class="hy-feature-row"><span class="hy-pill">2 × Ø6.5 通孔 / 件</span><span class="hy-pill">板厚 2 · 20 件 · 共 40 孔</span></div><p class="hy-sub">加工视图：底面局部，成形前示例；A 为定位基准。</p><p class="hy-source-note">原图：孔径、通孔要求、板厚。模拟补图：边距 20、孔距 20、横向偏距 15。</p><div class="hy-status-line"><span class="hy-sub">待核对：定位基准、孔位尺寸、公差、加工状态。</span><button type="button" class="cursor-interaction" data-fix="bracket">查看支架参数 →</button></div>${sheetMeta('BRACKET-DRILL')}`;
+        } else {
+          status.textContent='模拟草稿 · 待校核';
+          const base=previewPlan==='welded';
+          preview.innerHTML=`<h3>盒体装配 / ${base?'分板拼焊':'一体折弯'}示例</h3>${weldDrawing(previewPlan)}
+            <div class="hy-feature-row"><button type="button" class="cursor-interaction" data-seams="corners" aria-pressed="${state.seams!=='base'||!base}">W01–W04 · 角部接头</button>${base?`<button type="button" class="cursor-interaction" data-seams="base" aria-pressed="${state.seams==='base'}">W05–W08 · 底板周边</button>`:''}</div>
+            <p class="hy-sub">焊缝形式：连续（演示假设）；背面接头以虚线表示。</p><p class="hy-source-note">原图要求：外露焊缝焊后修整。模拟补图：接头位置、编号、连续焊缝形式${state.plan==='unknown'?'；主体方案尚未采用':''}。</p>
+            <div class="hy-status-line"><span class="hy-sub">待核对：实际接头、焊接方法、尺寸、质量要求。</span><button type="button" class="cursor-interaction" data-fix="body">查看主体方案 →</button></div>${sheetMeta('BODY-WELD')}`;
+        }
+      }
+      function render(){
+        root.querySelectorAll('[data-page]').forEach(el=>el.hidden=el.dataset.page!==state.step);
+        root.querySelector('.hy-steps').hidden=state.step==='home';
+        root.querySelector('[data-home]').hidden=state.step==='home';
+        root.querySelector('#hy-footer-context').textContent=state.step==='home'?'工程拆图工作台':'HY-D02 · 总装拆图样例 · 固定模拟结果';
+        root.querySelectorAll('[data-step]').forEach(el=>{if(el.dataset.step===state.step)el.setAttribute('aria-current','step');else el.removeAttribute('aria-current');});
+        root.querySelectorAll('[data-part]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.part===state.part)));
+        root.querySelector('[data-part="body"] small').textContent=state.plan==='unknown'?'制造构成待定':state.plan==='folded'?'方案：一体折弯':'方案：分板拼焊';
+        root.querySelectorAll('[data-doc]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.doc===state.doc)));
+        root.querySelector('[data-drawing="input"]').innerHTML=sourceSvg(null);
+        root.querySelector('[data-drawing="engineering"]').innerHTML=sourceSvg(state.part);
+        root.querySelector('#hy-selected-label').textContent=names[state.part];
+        inspector();decomposition();output();processes.render(state.part,state.doc);
+      }
+      function renderFiles(rejected=0){
+        const list=root.querySelector('#hy-selected-files');
+        list.replaceChildren();
+        selectedFiles.forEach((file,index)=>{
+          const row=document.createElement('li'),info=document.createElement('div'),name=document.createElement('span'),meta=document.createElement('small'),remove=document.createElement('button');
+          info.className='hy-file-info';name.textContent=file.name;
+          meta.textContent=(file.size<1024?file.size+' B':file.size<1048576?(file.size/1024).toFixed(1)+' KB':(file.size/1048576).toFixed(1)+' MB')+' · 已选择，暂未上传';
+          remove.type='button';remove.textContent='移除';remove.dataset.removeFile=String(index);remove.setAttribute('aria-label','移除 '+file.name);
+          info.append(name,meta);row.append(info,remove);list.append(row);
+        });
+        const status=selectedFiles.length?'已选择 '+selectedFiles.length+' 份文件，仅保留在当前页面；尚未上传或解析。':'当前演示版仅展示文件选择，暂未接入上传与解析。';
+        root.querySelector('#hy-upload-status').textContent=status+(rejected?' 有 '+rejected+' 份文件格式不支持，请选择 CAD、PDF 或图片。':'');
+      }
+      function selectFiles(files){
+        let rejected=0;
+        for(const file of files){
+          if(!acceptedExtensions.has(file.name.split('.').pop().toLowerCase())){rejected++;continue;}
+          if(!selectedFiles.some(item=>item.name===file.name&&item.size===file.size&&item.lastModified===file.lastModified))selectedFiles.push(file);
+        }
+        fileInput.value='';renderFiles(rejected);
+      }
+      function onDragOver(event){
+        if(!Array.from(event.dataTransfer?.types||[]).includes('Files'))return;
+        event.preventDefault();
+        if(state.step==='home'&&event.target.closest('[data-dropzone]'))root.querySelector('[data-dropzone]').dataset.dragging='true';
+      }
+      function onDragLeave(event){
+        const zone=root.querySelector('[data-dropzone]');
+        if(!zone.contains(event.relatedTarget))delete zone.dataset.dragging;
+      }
+      function onDrop(event){
+        if(!event.dataTransfer?.files?.length)return;
+        event.preventDefault();delete root.querySelector('[data-dropzone]').dataset.dragging;
+        if(state.step==='home'&&event.target.closest('[data-dropzone]'))selectFiles(event.dataTransfer.files);
+      }
+      root.addEventListener('dragover',onDragOver);
+      root.addEventListener('dragleave',onDragLeave);
+      root.addEventListener('drop',onDrop);
+      root.addEventListener('click',event=>{
+        const button=event.target.closest('button');if(!button)return;
+        if(event.defaultPrevented||button.closest('[data-process-ui]'))return;
+        if(button.hasAttribute('data-choose-files')){fileInput.click();return;}
+        if(button.dataset.removeFile!==undefined){selectedFiles.splice(Number(button.dataset.removeFile),1);renderFiles();return;}
+        if(button.hasAttribute('data-home'))state.step='home';
+        if(button.hasAttribute('data-open-demo')){state={step:'input',part:'body',plan:'unknown',doc:'bom',seams:'corners'};processes.reset();}
+        if(button.dataset.step||button.dataset.go)state.step=button.dataset.step||button.dataset.go;
+        if(button.dataset.part){state.part=button.dataset.part;processes.selectOriginalPart(state.part);}
+        if(button.dataset.doc)state.doc=button.dataset.doc;
+        if(['corners','base'].includes(button.dataset.seams))state.seams=button.dataset.seams;
+        if(button.dataset.fix){state.part=button.dataset.fix;state.step='engineering';processes.selectOriginalPart(state.part);root.querySelector('#hy-original-details').open=true;}
+        if(button.hasAttribute('data-preview-cut')){state.doc='cut';state.step='output';}
+        render();persist();
+      });
+      root.addEventListener('change',event=>{if(event.target===fileInput){selectFiles(fileInput.files);return;}if(event.target.id==='hy-fabrication'&&validPlans.includes(event.target.value)){state.plan=event.target.value;render();persist();}});
+      window.addEventListener('openai:set_globals',event=>{const value=event.detail?.globals?.widgetState?.privateContent;if(value){restore(value);render();}});
+      render();
+    })();
+  </script>
+</div>

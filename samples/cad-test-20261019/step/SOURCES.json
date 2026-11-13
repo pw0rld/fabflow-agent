@@ -1,0 +1,49 @@
+{
+  "retrieved_date": "2026-10-19",
+  "purpose": "公开机械支架 STEP 输入测试；不是客户生产图纸，也不是完整的可直接报价询价资料。",
+  "files": [
+    {
+      "file": "Nema-17_MountBracket.step",
+      "description": "FreeCAD 社区零件库中的 NEMA-17 电机安装支架模型，按原文件字节保存。",
+      "repository": "FreeCAD/FreeCAD-library",
+      "repository_note": "位于 FreeCAD GitHub 组织下的社区维护零件库；其 README 明确说明该库不属于 FreeCAD 软件项目。",
+      "commit": "f5ca01cdcaa2f69b9295a6382719c2d90628780c",
+      "repository_path": "Electrical Parts/Motors/Stepper/NEMA/Nema-17_Mount_Bracket/Nema-17_MountBracket.step",
+      "browse_url": "https://github.com/FreeCAD/FreeCAD-library/blob/f5ca01cdcaa2f69b9295a6382719c2d90628780c/Electrical%20Parts/Motors/Stepper/NEMA/Nema-17_Mount_Bracket/Nema-17_MountBracket.step",
+      "download_url": "https://raw.githubusercontent.com/FreeCAD/FreeCAD-library/f5ca01cdcaa2f69b9295a6382719c2d90628780c/Electrical%20Parts/Motors/Stepper/NEMA/Nema-17_Mount_Bracket/Nema-17_MountBracket.step",
+      "size_bytes": 164716,
+      "sha256": "ee28ab7d424d166a28d2e92eabe38c1a5dab59d0ca169cd2e3516e0e8015af41",
+      "http_content_type": "text/plain; charset=utf-8",
+      "format_checks": {
+        "starts_with": "ISO-10303-21;",
+        "ends_with_statement": "END-ISO-10303-21;",
+        "file_schema": "AUTOMOTIVE_DESIGN_CC2 { 1 2 10303 214 -1 1 5 4 }",
+        "not_html": true,
+        "below_25_MiB": true,
+        "cad_geometry_parser_used": false,
+        "rendered": false
+      },
+      "license": {
+        "identifier": "CC-BY-3.0",
+        "basis": "仓库 README 声明所有零件使用 CC-BY 3.0，要求按各零件作者署名。",
+        "source_url": "https://github.com/FreeCAD/FreeCAD-library/blob/f5ca01cdcaa2f69b9295a6382719c2d90628780c/README.md#license",
+        "license_url": "https://creativecommons.org/licenses/by/3.0/",
+        "attribution": "Nema-17_MountBracket.step — FreeCAD/FreeCAD-library contributors; file contributed by Charles Fox in commit 6ca91d1dc7aeedc40d40b4d37e65163b332941db; CC BY 3.0; unchanged.",
+        "attribution_note": "文件提交者是 Charles Fox；STEP 内 author 仅为占位词 Author，不能据此认定原始建模者姓名。",
+        "file_history_url": "https://github.com/FreeCAD/FreeCAD-library/commit/6ca91d1dc7aeedc40d40b4d37e65163b332941db"
+      },
+      "known_from_file": {
+        "length_unit": "mm",
+        "length_unit_evidence": ["#20 = ( LENGTH_UNIT() NAMED_UNIT(*) SI_UNIT(.MILLI.,.METRE.) );", "#3365 = ( LENGTH_UNIT() NAMED_UNIT(*) SI_UNIT(.MILLI.,.METRE.) );"],
+        "generator": "FreeCAD / Open CASCADE STEP processor 6.8",
+        "material": null,
+        "thickness": null,
+        "manufacturing_tolerances": null,
+        "finish": null,
+        "quantity": null,
+        "note": "仅做文件签名与元数据文本核对，未运行 CAD 几何解析；不把文件名、坐标点或模型误当已核对的板厚、尺寸、公差或工艺。未找到材料声明。"
+      },
+      "recommended_test": "先测试是否能完整保存 STEP 原件并明确识别待预览/待解析状态，再测试是否能将文件中的 mm 元数据与缺失材料、数量、公差等信息正确区分；不能把上传成功当作读图成功。"
+    }
+  ]
+}

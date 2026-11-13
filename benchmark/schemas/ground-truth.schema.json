@@ -1,0 +1,171 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "case_id",
+    "coverage",
+    "assertions"
+  ],
+  "properties": {
+    "case_id": {
+      "type": "string"
+    },
+    "coverage": {
+      "enum": [
+        "partial",
+        "exhaustive"
+      ]
+    },
+    "assertions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "track",
+          "path",
+          "expected",
+          "comparison",
+          "status",
+          "evidence"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "track": {
+            "enum": [
+              "regions",
+              "parameters",
+              "ownership",
+              "bom",
+              "geometry",
+              "calculation"
+            ]
+          },
+          "path": {
+            "type": "string"
+          },
+          "expected": {},
+          "comparison": {
+            "enum": [
+              "exact",
+              "numeric",
+              "contains"
+            ]
+          },
+          "status": {
+            "enum": [
+              "provisional",
+              "engineering_verified",
+              "disputed",
+              "unreadable",
+              "not_applicable"
+            ]
+          },
+          "evidence": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
+          },
+          "tolerance": {
+            "type": "number",
+            "minimum": 0
+          },
+          "unit": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "object_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reviewer": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "collections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "track",
+          "status",
+          "coverage",
+          "keys",
+          "items"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "track": {
+            "enum": [
+              "regions",
+              "parameters",
+              "ownership",
+              "bom",
+              "geometry",
+              "calculation"
+            ]
+          },
+          "status": {
+            "enum": [
+              "engineering_verified",
+              "provisional",
+              "disputed",
+              "unreadable",
+              "not_applicable"
+            ]
+          },
+          "coverage": {
+            "enum": [
+              "partial",
+              "exhaustive"
+            ]
+          },
+          "keys": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "iou_threshold": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "tolerances": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    }
+  }
+}

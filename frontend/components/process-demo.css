@@ -1,0 +1,48 @@
+#hy-assembly-v3 .hy-op-toolbar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+#hy-assembly-v3 .hy-op-toolbar label { display:flex; align-items:center; gap:10px; min-width:0; max-width:100%; }
+#hy-assembly-v3 .hy-op-toolbar select { width:auto; min-width:0; max-width:100%; }
+#hy-assembly-v3 .hy-op-work { display:grid; grid-template-columns:150px minmax(0,1fr); gap:18px; margin-top:20px; align-items:start; }
+#hy-assembly-v3 .hy-op-main { min-width:0; }
+#hy-assembly-v3 .hy-op-parts { display:grid; gap:5px; margin:10px 0 18px; }
+#hy-assembly-v3 .hy-op-parts button { text-align:left; }
+#hy-assembly-v3 .hy-op-parts small { color:var(--hy-muted); font-size:12px; margin-bottom:10px; overflow-wrap:anywhere; }
+#hy-assembly-v3 .hy-op-route { display:flex; gap:8px; flex-wrap:wrap; margin:12px 0 16px; }
+#hy-assembly-v3 .hy-op-route button { text-align:left; padding:7px 10px; }
+#hy-assembly-v3 .hy-op-route small { display:block; color:var(--hy-muted); font-size:11px; }
+#hy-assembly-v3 .hy-op-route [data-route-state="pending"] small { color:var(--hy-warn); }
+#hy-assembly-v3 .hy-op-route [data-route-state="na"] { opacity:.6; text-decoration:line-through; }
+#hy-assembly-v3 .hy-op-layout { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(240px,1fr); align-items:start; gap:14px; }
+#hy-assembly-v3 .hy-op-drawing { display:block; width:100%; height:auto; }
+#hy-assembly-v3 .hy-op-drawing text { font:18px system-ui,sans-serif; fill:var(--hy-ink); }
+#hy-assembly-v3 .hy-op-drawing .hy-op-watermark { font-size:14px; fill:var(--hy-muted); }
+#hy-assembly-v3 .hy-op-surface { fill:var(--hy-soft); stroke:var(--hy-muted); stroke-width:2; }
+#hy-assembly-v3 .hy-op-feature { fill:none; stroke:var(--hy-blue); stroke-width:2; }
+#hy-assembly-v3 [data-feature-shape] { cursor:pointer; }
+#hy-assembly-v3 .hy-op-picked { stroke:var(--hy-warn); stroke-width:5; }
+#hy-assembly-v3 .hy-op-hole { fill:var(--hy-paper); stroke:var(--hy-blue); stroke-width:2; }
+#hy-assembly-v3 .hy-op-picked .hy-op-hole { stroke:var(--hy-warn); stroke-width:5; }
+#hy-assembly-v3 .hy-op-guide { fill:none; stroke:var(--hy-muted); stroke-width:1; stroke-dasharray:5 4; }
+#hy-assembly-v3 .hy-op-catalog { border-top:1px solid var(--hy-line); margin-top:22px; padding-top:14px; }
+#hy-assembly-v3 summary { cursor:pointer; font-weight:500; padding:8px 0; }
+#hy-assembly-v3 .hy-op-catalog-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:18px; margin-top:18px; }
+#hy-assembly-v3 .hy-op-catalog-items { display:grid; gap:6px; margin-top:9px; }
+#hy-assembly-v3 .hy-op-catalog-items button { text-align:left; font-size:12px; }
+#hy-assembly-v3 button:disabled { cursor:default; opacity:.45; }
+#hy-assembly-v3 [data-process-output]>.hy-op-parts { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:20px; }
+#hy-assembly-v3 [data-process-output]>.hy-op-parts small { margin:0 12px 0 0; }
+@media(max-width:1080px) {
+  #hy-assembly-v3 .hy-op-layout { grid-template-columns:minmax(0,1fr); }
+  #hy-assembly-v3 .hy-op-layout>.hy-panel> .hy-op-drawing { max-height:380px; }
+  #hy-assembly-v3 .hy-op-catalog-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media(max-width:620px) {
+  #hy-assembly-v3 .hy-op-work { grid-template-columns:minmax(0,1fr); }
+  #hy-assembly-v3 .hy-op-parts { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+  #hy-assembly-v3 .hy-op-parts small { margin-bottom:0; }
+  #hy-assembly-v3 .hy-op-toolbar label { display:block; width:100%; }
+  #hy-assembly-v3 .hy-op-toolbar select { display:block; width:100%; margin-top:6px; }
+  #hy-assembly-v3 .hy-op-route { gap:6px; }
+  #hy-assembly-v3 .hy-op-route button { flex:1 1 120px; }
+  #hy-assembly-v3 .hy-op-catalog-grid { grid-template-columns:minmax(0,1fr); }
+  #hy-assembly-v3 .hy-op-drawing text { font-size:21px; }
+}
