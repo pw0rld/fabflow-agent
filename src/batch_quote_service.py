@@ -1007,8 +1007,7 @@ class BatchQuoteService:
                    and recovered.get('source_sha256') == initial['source_sha256'], '报价快照与恢复任务不一致。')
             with self._lock(batch_id):
                 self._complete(self._read(batch_id), recovered, recovered['source_files'])
-            if self.engineering_recognition.rpc_url and len(recovered.get('lines', [])) <= 1000:
-                self.engineering_recognition.enqueue(batch_id, job['run_id'], {'event_id': 'auto-engineering-' + job['run_id']})
+            self._enqueue_engineering(batch_id, recovered)
             return
         (folder / 'processed').mkdir(mode=0o700, exist_ok=True)
         for fid in job['file_ids']:
@@ -1092,8 +1091,22 @@ class BatchQuoteService:
         with self._lock(batch_id):
             state = self._read(batch_id)
             self._complete(state, result, sources)
-        if self.engineering_recognition.rpc_url and len(result['lines']) <= 1000:
-            self.engineering_recognition.enqueue(batch_id, job['run_id'], {'event_id': 'auto-engineering-' + job['run_id']})
+        self._enqueue_engineering(batch_id, result)
+
+    def _enqueue_engineering(self, batch_id, result):
+        """Admit engineering work for the selected runtime, including SDK mode.
+
+        A legacy RPC URL is not an SDK capability. Manually injected readers
+        retain their explicit recognition path without enabling new auto work.
+        """
+        if not 1 <= len(result.get('lines', [])) <= 1000:
+            return
+        recognition = self.engineering_recognition
+        from agent_bridge import is_configured
+        if not is_configured(recognition.rpc_url):
+            return
+        run_id = result['run_id']
+        recognition.enqueue(batch_id, run_id, {'event_id': 'auto-engineering-' + run_id})
 
     def _complete(self, state, result, sources):
         state['result'] = result

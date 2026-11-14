@@ -75,9 +75,13 @@
 ```sh
 PYTHONPATH=src:tests:. .venv/bin/python -m unittest \
   test_agents_executor test_agent_tools test_agent_runtime \
-  test_agent_bridge test_agents_sdk_transport -v
+  test_agent_bridge test_agents_sdk_transport test_agent_auto_engineering -v
 ```
 
-实际 SDK 的流式协议、图片工具循环与失败行为须与纯单元测试分开检查。上线前还应对实际接口执行另行授权的公开样例测试；离线协议通过不能证明模型看懂了图纸。本分支不修改现有生产服务。
+实际 SDK 的流式协议、图片工具循环与失败行为须与纯单元测试分开检查。上线前还应对实际接口执行授权范围内的样例测试；离线协议通过不能证明模型看懂了图纸。生产切换需单独部署，不会因切换 Git 分支自动进行。
 
 2026-11-14 在 ZeroClave 的独立构建目录完成 **344 项相关回归，全部通过、无跳过**，涵盖上述 SDK 测试，以及原有候选校验、PDF 页图与局部图、订单恢复、工程提参和核价隔离。真实 SDK 的 Responses / Chat Completions 各验证了两轮图片工具调用及 503 不自动重试；HTTP 使用离线模拟传输，没有调用外部模型。另用 `tools/smoke_agent_server.py` 验证无模型凭据时实际 CLI 仍可启动并通过健康检查，使用临时订单目录与随机本地端口。测试 CPU 限制 70%，内存上限 512 MiB。该结果不是全仓库 CI 或图纸识别精度 benchmark。
+
+同日部署前补齐了自动工程识别入队与历史任务目录兼容：SDK 配置有效即可自动入队，无须 DSH URL；普通报价、受保护案例和客户订单沿用各自原有的 reader 根目录。使用独立生产依赖环境完成 **350 项相关回归，全部通过、无跳过**。真实 `gpt-6-sol` / Responses 接口还通过了一次合成图片校验：两次模型请求、一次图片工具调用，读对随机校验码，报告用量 837 token；没有使用客户资料或上传额度。这只验证模型与工具链路，不代表工程图纸识别精度。
+
+用户授权后，ZeroClave 的主工作台与独立图片分区服务已部署 SDK 运行层。实例保留原工厂成本适配器、前端静态页面、订单、历史报价、原生 CAD Python 和上传额度；凭据与反向代理配置没有进入仓库。部署保留旧版本用于回退。其他实例须独立配置，不应复制该实例的私有数据或环境。

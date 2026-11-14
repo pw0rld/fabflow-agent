@@ -706,8 +706,12 @@ def main(argv=None):
                     bridge_factory=lambda workspace: AgentBridge(legacy_url, workspace))
     app.resume_reads()
     with make_server(app, args.port) as server:
-        for service in (server.batch_quotes, server.case_quotes, server.customer_batches):
-            service.engineering_recognition.configure(app.reader_root / service.root.name / 'engineering', legacy_url)
+        # Existing recognition records derive their workspace from this root.
+        # Keep historical roots so restart inspects admitted sessions in place.
+        server.batch_quotes.engineering_recognition.configure(app.reader_root / 'batch-engineering', legacy_url)
+        server.case_quotes.engineering_recognition.configure(app.reader_root / 'protected-case-engineering', legacy_url)
+        server.customer_batches.engineering_recognition.configure(
+            server.customer_batches.root / '.engineering-readers', legacy_url)
         from cad_manufacturing_ai import suggest
         server.manufacturing.analyzer = lambda workspace, geometry: suggest(
             workspace, geometry, legacy_url, reader_root=app.reader_root / 'cad-manufacturing')
