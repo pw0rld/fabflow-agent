@@ -5,6 +5,7 @@ import { ArrowDownToLine, ArrowRight, Box, Check, ChevronRight, CircleHelp, Cloc
 import BatchPartViewer, { safePartPreviewUrl } from '@/components/batch-part-viewer'
 import SourceAssemblyPreview from '@/components/source-assembly-preview'
 import ProcessQuotePanel from '@/components/process-quote-panel'
+import { TrialContactProfile, TrialInterestPanel, useTrialLeadProfile } from '@/components/trial-contact-profile'
 import type { CustomerOrder } from '@/components/customer-upload-portal'
 import { estimatedWeight, quotationCount, quotationNumber } from '@/lib/batch-display-format'
 import { savedWeightDisplay } from '@/lib/customer-weight-summary'
@@ -59,12 +60,14 @@ export default function CustomerTrial() {
   const [tab, setTab] = useState<'model' | 'parts' | 'quote'>('model'), [manifest, setManifest] = useState<Manifest | null>(null), [partId, setPartId] = useState<string | null>(null)
   const [partsLoading, setPartsLoading] = useState(false), [partsError, setPartsError] = useState(''), [partsTick, setPartsTick] = useState(0), [viewer, setViewer] = useState<string | null>(null)
   const [quotePreview, setQuotePreview] = useState(false)
+  const leads = useTrialLeadProfile(ready)
+  const [profileOpenKey, setProfileOpenKey] = useState(0), [interestOpenKey, setInterestOpenKey] = useState(0), [flowStep, setFlowStep] = useState<number | null>(null)
   const mounted = useRef(true), selectedRef = useRef<string | null>(null), input = useRef<HTMLInputElement>(null), lock = useRef(false), quotaEpoch = useRef(0)
   const uploadAttempt = useRef<UploadAttempt | null>(null), startAttempt = useRef<StartAttempt | null>(null)
   const current = orders.find(order => order.id === selected) || null
   const running = busy(current?.status), hasQuote = !!current?.quote
   const quotaBlocked = !!quota && (quota.blocked || quota.remaining < 1)
-  const canUpload = ready && !quotaBlocked && !quotaLoading
+  const canUpload = ready && !quotaBlocked && !quotaLoading && leads.enabled !== null
   const recoverUpload = !current && !!file && uploadAttempt.current?.file === file && uploadAttempt.current.submitted && uploadAttempt.current.uncertain
   const recoverProcessing = !!current && startAttempt.current?.id === current.id && startAttempt.current.submitted && startAttempt.current.uncertain
   const selectedPart = manifest?.parts.find(part => part.id === partId) || manifest?.parts[0] || null
@@ -76,10 +79,10 @@ export default function CustomerTrial() {
   const weights = savedWeightDisplay(current?.quote?.weight_summary)
   const quoted = current && current.quote ? quoteUrl(current.quote.quote_url, current) : null
   const printable = current && current.quote ? quoteUrl(current.quote.print_url, current, true) : null
-  const phase = !current ? 1 : !hasQuote ? 2 : 3
+  const phase = leads.enabled ? flowStep || (!leads.profile ? 1 : !current || !hasQuote ? 2 : 3) : !current ? 1 : !hasQuote ? 2 : 3
   const adopt = useCallback((value: CustomerOrder) => { setOrders(previous => [value, ...previous.filter(order => order.id !== value.id)]) }, [])
   const choose = useCallback((order: CustomerOrder | null) => {
-    selectedRef.current = order?.id || null; setSelected(order?.id || null); setQuantity(String(order?.order_sets || 1)); setTab('model'); setViewer(null); setQuotePreview(false); setError(''); setConnectionError('')
+    selectedRef.current = order?.id || null; setSelected(order?.id || null); setQuantity(String(order?.order_sets || 1)); setTab('model'); setViewer(null); setQuotePreview(false); setError(''); setConnectionError(''); setFlowStep(null)
     if (!order) { setFile(null); uploadAttempt.current = null; startAttempt.current = null }
     try { if (order) localStorage.setItem(LAST, order.id); else localStorage.removeItem(LAST) } catch { /* Storage is optional; server cookie owns orders. */ }
   }, [])
@@ -142,6 +145,8 @@ export default function CustomerTrial() {
   }
   async function submit(action: 'start' | 'retry' = 'start', recovery?: 'upload' | 'processing') {
     if (lock.current || !ready) return
+    if (leads.enabled === null) { setError('请先重新载入企业资料，再开始新的处理。已有结果可以继续查看。'); return }
+    if (leads.enabled && !leads.profile) { setProfileOpenKey(value => value + 1); setFlowStep(1); setError('请先保存企业资料，再开始体验。已选择的文件会保留。'); return }
     if (recovery !== 'processing' && (!/^[1-9][0-9]*$/.test(quantity) || Number(quantity) > 100000)) { setError('数量请输入 1 至 100000 的整数。'); return }
     lock.current = true; setSubmitting(true); setError('')
     try {
@@ -186,16 +191,23 @@ export default function CustomerTrial() {
     finally { setLoading(false) }
   }
   const total = Math.max(0, Number(current?.progress?.total) || 0), done = Math.max(0, Math.min(total, Number(current?.progress?.done) || 0))
-  return <main className="fft" data-testid="trial-page" data-session-ready={ready ? 'true' : 'false'} data-upload-state={quotaBlocked ? 'unavailable' : ready ? 'ready' : 'connecting'}>
-    <header className="fft-header"><a className="fft-brand" href="/try/" aria-label="FabFlow 首页"><span><Box size={24} strokeWidth={1.7}/></span><strong>FabFlow<span>制造报价体验</span></strong></a><div className="fft-header-right"><span className="fft-private"><ShieldCheck size={15}/>专属询价空间</span></div></header>
-    <div className="fft-shell"><section className="fft-intro"><div><span className="fft-eyebrow">FROM CAD TO QUOTE</span><h1>上传模型，<em>让报价开始。</em></h1><p>看清装配与零件，查看材料、工艺和报价草稿。</p></div><div className="fft-hero-note"><span><ShieldCheck size={17}/>仅本浏览器可查看自己的询价</span><small>STEP 原生读取 · 后台持续处理</small></div></section>
-      <nav className="fft-steps" aria-label="询价流程">{[{ label: '上传模型', note: 'STEP / STP' }, { label: '模型与零件', note: '原生拆件与参数' }, { label: '查看报价', note: '估价草稿，待审核' }].map((step, index) => <button type="button" key={step.label} className={phase === index + 1 ? 'active' : phase > index + 1 ? 'done' : ''} aria-current={phase === index + 1 ? 'step' : undefined} disabled={index > 0 && !current || index === 2 && !hasQuote} onClick={() => { if (index === 0 && !submitting && !recoverUpload && !recoverProcessing) choose(null); else if (index === 1) setTab('model'); else if (index === 2) setTab('quote') }}><b>{phase > index + 1 ? <Check size={17}/> : `0${index + 1}`}</b><span><strong>{step.label}</strong><small>{step.note}</small></span>{index < 2 && <ChevronRight size={17}/>}</button>)}</nav>
+  return <main className="fft" data-testid="trial-page" data-session-ready={ready ? 'true' : 'false'} data-upload-state={quotaBlocked ? 'unavailable' : ready ? 'ready' : 'connecting'} data-lead-flow={leads.enabled === null ? 'loading' : leads.enabled ? 'enabled' : 'disabled'} data-profile-state={leads.profile ? 'saved_unverified' : leads.loading ? 'loading' : leads.error ? 'error' : 'empty'}>
+    <header className="fft-header"><a className="fft-brand" href="/try/" aria-label="FabFlow 首页"><span><Box size={24} strokeWidth={1.7}/></span><strong>FabFlow<span>{leads.enabled ? '加工厂软件体验' : '制造报价体验'}</span></strong></a><div className="fft-header-right"><span className="fft-private"><ShieldCheck size={15}/>{leads.enabled ? '工厂专属体验空间' : '专属询价空间'}</span></div></header>
+    <div className="fft-shell"><section className="fft-intro"><div><span className="fft-eyebrow">FROM CAD TO QUOTE</span><h1>{leads.enabled ? <>从客户模型，<em>到工程与报价。</em></> : <>上传模型，<em>让报价开始。</em></>}</h1><p>{leads.enabled ? '上传一份 STEP，体验自动拆件、BOM 整理与报价草稿。' : '看清装配与零件，查看材料、工艺和报价草稿。'}</p></div><div className="fft-hero-note"><span><ShieldCheck size={17}/>仅本浏览器可查看自己的体验资料</span><small>STEP 原生读取 · 后台持续处理</small></div></section>
+      {leads.enabled ? <nav className="fft-steps fft-steps-leads" aria-label="工厂体验流程">{[{ label: '企业资料', note: '介绍你的工厂' }, { label: '上传模型', note: 'STEP / STP' }, { label: '体验结果', note: '拆件、参数与估价' }, { label: '申请试用', note: '接入本厂工作流' }].map((step, index) => <button type="button" key={step.label} className={phase === index + 1 ? 'active' : phase > index + 1 ? 'done' : ''} aria-current={phase === index + 1 ? 'step' : undefined} disabled={index === 2 && !current || index === 1 && (submitting || !!recoverUpload || !!recoverProcessing)} onClick={() => {
+        if (index === 0) { setProfileOpenKey(value => value + 1); setFlowStep(1) }
+        else if (index === 1) { if (current) choose(null); setFlowStep(2) }
+        else if (index === 2) { setTab('model'); setViewer(null); setFlowStep(3) }
+        else if (!leads.profile) { setProfileOpenKey(value => value + 1); setFlowStep(1) }
+        else { setInterestOpenKey(value => value + 1); setFlowStep(4) }
+      }}><b>{phase > index + 1 ? <Check size={17}/> : `0${index + 1}`}</b><span><strong>{step.label}</strong><small>{step.note}</small></span>{index < 3 && <ChevronRight size={17}/>}</button>)}</nav> : <nav className="fft-steps" aria-label="询价流程">{[{ label: '上传模型', note: 'STEP / STP' }, { label: '模型与零件', note: '原生拆件与参数' }, { label: '查看报价', note: '估价草稿，待审核' }].map((step, index) => <button type="button" key={step.label} className={phase === index + 1 ? 'active' : phase > index + 1 ? 'done' : ''} aria-current={phase === index + 1 ? 'step' : undefined} disabled={index > 0 && !current || index === 2 && !hasQuote} onClick={() => { if (index === 0 && !submitting && !recoverUpload && !recoverProcessing) choose(null); else if (index === 1) setTab('model'); else if (index === 2) setTab('quote') }}><b>{phase > index + 1 ? <Check size={17}/> : `0${index + 1}`}</b><span><strong>{step.label}</strong><small>{step.note}</small></span>{index < 2 && <ChevronRight size={17}/>}</button>)}</nav>}
       {connectionError && <div className="fft-alert" role="status"><span>{connectionError}{running && ' 后台仍会继续处理。'}</span><button type="button" onClick={() => void (ready && current ? refresh() : initialize())} disabled={loading}><RefreshCw size={14}/>重新连接</button></div>}
-      <div className="fft-layout"><aside className="fft-config"><div className="fft-card-top"><span>询价配置</span>{current && <button type="button" onClick={() => choose(null)} disabled={submitting || !!recoverProcessing}><Plus size={14}/>新建</button>}</div>
+      <TrialContactProfile enabled={leads.enabled} profile={leads.profile} loading={leads.loading} error={leads.error} openKey={profileOpenKey} onReload={() => void leads.reload()} onSaved={profile => { leads.adopt(profile); setFlowStep(null); setError('') }}/>
+      <div className="fft-layout"><aside className="fft-config"><div className="fft-card-top"><span>{leads.enabled ? '体验配置' : '询价配置'}</span>{current && <button type="button" onClick={() => choose(null)} disabled={submitting || !!recoverProcessing}><Plus size={14}/>新建</button>}</div>
         {current ? <div className="fft-file-selected"><span><Box size={24}/></span><div><strong>{current.name}</strong><small>{date(current.created_at)}</small></div><FileCheck2 size={17}/></div> : <><input ref={input} hidden type="file" accept=".step,.stp" aria-label="上传 STEP 模型" data-testid="trial-file-input" disabled={quotaBlocked || submitting || !!recoverUpload} onChange={event => { pick(event.target.files); event.target.value = '' }}/><button type="button" className={`fft-drop${dragging ? ' dragging' : ''}${file ? ' selected' : ''}`} data-testid="trial-dropzone" disabled={quotaBlocked || submitting || !!recoverUpload} onClick={() => input.current?.click()} onDragOver={event => { event.preventDefault(); if (!quotaBlocked && !submitting && !recoverUpload) setDragging(true) }} onDragLeave={() => setDragging(false)} onDrop={event => { event.preventDefault(); if (!submitting && !recoverUpload) pick(event.dataTransfer.files) }}><span><UploadCloud size={29} strokeWidth={1.5}/></span><strong>{file ? file.name : '拖放 CAD 文件到这里'}</strong><small>{file ? `${(file.size / 1024 / 1024).toFixed(2)} MB · 点击更换` : '或点击选择文件'}</small><i>STEP / STP · 单文件 ≤ 20 MB</i></button></>}
         <div className="fft-quantity"><label htmlFor="trial-quantity">订单数量<span>套</span></label><input id="trial-quantity" data-testid="trial-quantity" type="number" min="1" max="100000" step="1" inputMode="numeric" value={quantity} disabled={!ready || submitting || !!recoverProcessing || !!current && current.status !== 'uploaded'} onChange={event => { setQuantity(event.target.value); startAttempt.current = null }}/><small>以本份 STEP 根装配为一套</small></div>
         <div className="fft-config-readonly"><div><span>材料与规格</span><strong>从 CAD 资料读取</strong></div><div><span>加工工艺</span><strong>按零件工程条件整理</strong></div><p>未标明或需工程判断的条件，会在结果中单独列出。</p></div>
-        {!current && <button type="button" className="fft-primary fft-full" data-testid="trial-submit" disabled={!canUpload || !file || submitting || !!recoverUpload} onClick={() => void submit()}>{submitting ? <LoaderCircle size={17} className="fft-spin"/> : <ArrowRight size={17}/>}开始分析与询价</button>}
+        {!current && <button type="button" className="fft-primary fft-full" data-testid="trial-submit" disabled={!canUpload || !file || submitting || !!recoverUpload} onClick={() => void submit()}>{submitting ? <LoaderCircle size={17} className="fft-spin"/> : <ArrowRight size={17}/>} {leads.enabled ? leads.profile ? '开始体验解析' : '补充资料，开始体验' : '开始分析与询价'}</button>}
         {current?.status === 'uploaded' && <button type="button" className="fft-primary fft-full" data-testid="trial-start" disabled={submitting || !!recoverProcessing || current.can_start === false} onClick={() => void submit()}>{submitting ? <LoaderCircle size={17} className="fft-spin"/> : <ArrowRight size={17}/>}开始处理已保存模型</button>}
         {(recoverUpload || recoverProcessing) && <div className="fft-recovery"><strong>上次请求的结果待确认</strong><p>恢复同一次请求，不会新建重复询价。</p><button type="button" className="fft-secondary" data-testid="trial-recover" disabled={submitting} onClick={() => void submit(startAttempt.current?.action || 'start', recoverUpload ? 'upload' : 'processing')}><RotateCcw size={14}/>恢复本次请求</button></div>}
         {!current && quotaBlocked && <p className="fft-upload-unavailable" role="status" data-testid="trial-upload-unavailable">当前暂不接受新文件，请联系工作人员。</p>}
@@ -211,6 +223,7 @@ export default function CustomerTrial() {
           {!hasQuote && !running && current.status === 'uploaded' && <div className="fft-saved"><FileCheck2 size={45} strokeWidth={1.2}/><h3>模型已保存</h3><p>确认左侧数量，开始读取装配、拆分零件并整理报价。</p></div>}
         </>}
       </section></div>{error && <div className="fft-alert fft-error" role="alert" data-testid="trial-error">{error}</div>}
+      {leads.enabled && <TrialInterestPanel profile={leads.profile} batchId={current?.id} runId={current?.quote?.run_id} openKey={interestOpenKey} onProfile={leads.adopt} onNeedProfile={() => { setProfileOpenKey(value => value + 1); setFlowStep(1) }} onOpenChange={open => setFlowStep(open ? 4 : null)}/>}
     </div>{viewer && safePartPreviewUrl(viewer) && <BatchPartViewer key={viewer} previewUrl={viewer} customer onClose={() => setViewer(null)}/>}
   </main>
 }

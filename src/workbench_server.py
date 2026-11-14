@@ -19,18 +19,21 @@ from prep_record import RecordError, identifier, only_keys, require
 from workbench_store import Workbench, WorkbenchError, MAX_UPLOAD, calculation_message
 from cad_documents import CadDocumentStore, MAX_STEP_BYTES
 from cad_manufacturing import CadManufacturingService
-from batch_quote_service import BatchQuoteService, MAX_BATCH_BYTES as MAX_PACKAGE_BYTES
+from batch_quote_service import BatchQuoteService, MAX_BATCH_BYTES as MAX_PACKAGE_BYTES, RUN_ID
 from batch_quote_cases import ProtectedCaseQuoteService, API_PREFIX as CASE_API
 from customer_upload_service import (CustomerBatchQuoteService, CustomerUploadService,
                                      API_PREFIX as CUSTOMER_API, ADMIN_API_PREFIX as CUSTOMER_ADMIN_API)
 from workbench_access import (IDENTITY_PATH, LOGIN_PATH, staff_identity, login_destination,
                               legacy_quotation_login, legacy_customer_root)
 from customer_upload_quota import MAX_BYTES as MAX_CUSTOMER_STEP_BYTES
+from trial_leads import TrialLeadStore
 
 APP_ROOT = Path(__file__).resolve().parents[1]
 API = '/workbench/api'
 MAX_JSON = 1024 * 1024
 MAX_COST_SHEET_JSON = 4 * 1024 * 1024
+MAX_TRIAL_FORM_JSON = 16 * 1024
+TRIAL_STAFF_API = '/ortho2cad-test/customer-upload-admin/api/trial-leads'
 STATIC = {'/workbench/': ('index.html', 'text/html; charset=utf-8'),
           '/workbench/index.html': ('index.html', 'text/html; charset=utf-8'),
           '/workbench/app.js': ('app.js', 'text/javascript; charset=utf-8'),
@@ -73,6 +76,8 @@ if (APP_ROOT / 'web/demo/customer/part/index.html').is_file():
     STATIC['/workbench/customer/part/'] = ('demo/customer/part/index.html', 'text/html; charset=utf-8')
 if (APP_ROOT / 'web/demo/experience/index.html').is_file():
     STATIC['/workbench/experience/'] = ('demo/experience/index.html', 'text/html; charset=utf-8')
+if (APP_ROOT / 'web/demo/leads/index.html').is_file():
+    STATIC['/workbench/leads/'] = ('demo/leads/index.html', 'text/html; charset=utf-8')
 CAD_TYPES = {'.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
              '.css': 'text/css; charset=utf-8', '.wasm': 'application/wasm',
              '.json': 'application/json; charset=utf-8', '.txt': 'text/plain; charset=utf-8',
@@ -261,6 +266,100 @@ class WorkbenchHandler(BaseHTTPRequestHandler):
             raise WorkbenchError('该版本已采用内部核价单，请在核价单调整并另存新版本。', 'cost_sheet_required', 409)
         raise WorkbenchError('此入口复用已解析案例；上传新订单请返回公开报价工作台。', 'case_read_only', 405)
 
+    def _trial_profile_required(self, owner):
+        # This is a self-reported contact profile, not phone authentication.
+        # Real identity verification will use its own provider-backed gate.
+        if self.server.trial_flow_enabled and self.server.trial_leads.profile(owner) is None:
+            raise WorkbenchError('请先在官网体验页保存企业资料，再提交体验。', 'trial_profile_required', 403)
+
+    def _trial_order(self, owner, order):
+        # Reuse the authorized customer projection, never the geometry or costs.
+        if self.server.trial_flow_enabled:
+            binding = {'batch_id': order['id'], 'name': order['name'], 'status': order['status']}
+            quotation = order.get('quote')
+            if isinstance(quotation, dict):
+                binding['run_id'] = quotation['run_id']
+                summary = quotation.get('weight_summary') or {}
+                original_count = summary.get('line_count') if isinstance(summary, dict) else None
+                known, unknown = quotation.get('quoted_lines'), quotation.get('unpriced_lines')
+                if type(original_count) is int:
+                    binding['part_count'] = original_count
+                elif type(known) is int and type(unknown) is int:
+                    binding['part_count'] = known + unknown
+            try:
+                self.server.trial_leads.record_trial(owner, binding)
+            except WorkbenchError as error:
+                if error.code != 'trial_store_unavailable':
+                    raise
+                # Telemetry must not hide an already accepted upload/start or
+                # a saved result. A later authorized read can record it again.
+                self.log_error('Trial activity storage unavailable; saved order preserved.')
+            except OSError:
+                self.log_error('Trial activity storage unavailable; saved order preserved.')
+        return order
+
+    def _trial_customer(self, owner, suffix, url, *, post=False):
+        if url.query:
+            raise FileNotFoundError()
+        store = self.server.trial_leads
+        if suffix == '/trial/profile':
+            if not post:
+                return self._json({'enabled': self.server.trial_flow_enabled,
+                                   'verification_available': False, 'profile': store.profile(owner)})
+            return self._json(store.save_profile(owner, self._json_body(MAX_TRIAL_FORM_JSON)))
+        if suffix == '/trial/applications':
+            if not post:
+                return self._json({'applications': store.applications(owner)})
+            payload = self._json_body(MAX_TRIAL_FORM_JSON)
+            require(set(payload) <= {'event_id', 'interest', 'note', 'contact_consent', 'batch_id', 'run_id'},
+                    '请只提交试用申请和当前体验编号。')
+            batch_id, run_id = payload.get('batch_id'), payload.get('run_id')
+            binding = None
+            if batch_id is not None:
+                state = self.server.customer_upload._owned(owner, batch_id)
+                if run_id is not None:
+                    require(isinstance(run_id, str) and RUN_ID.fullmatch(run_id), '体验结果编号无效。')
+                    if not any(row.get('id') == run_id for row in state.get('runs', [])):
+                        raise WorkbenchError('体验记录不存在。', 'not_found', 404)
+                binding = {'batch_id': state['id'], 'name': state['name'], 'status': state['status']}
+                if run_id is not None:
+                    binding['run_id'] = run_id
+                result = state.get('result')
+                if isinstance(result, dict) and (run_id is None or result.get('run_id') == run_id):
+                    binding['part_count'] = len(result.get('lines', []))
+            else:
+                require(run_id is None, '体验结果须关联到当前浏览器的体验记录。')
+            return self._json(store.record_interest(owner, payload, order_binding=binding), 201)
+        raise FileNotFoundError()
+
+    def _trial_staff(self, url, *, post=False):
+        # This entire namespace is authenticated by an explicit Nginx location.
+        # The proxy overwrites the audit actor; browser role hints are unused.
+        if '%' in url.path:
+            raise FileNotFoundError()
+        suffix = url.path[len(TRIAL_STAFF_API):]
+        store = self.server.trial_leads
+        actor = self.headers.get('X-FabFlow-Staff-User', '')
+        if not re.fullmatch(r'[A-Za-z0-9._@-]{1,80}', actor):
+            actor = 'authenticated_staff'
+        if suffix == '' and not post:
+            query = parse_qs(url.query, keep_blank_values=True, strict_parsing=True)
+            require(set(query) <= {'limit', 'offset', 'status', 'contactable'}
+                    and all(len(values) == 1 for values in query.values()), '线索筛选条件无效。')
+            limit, offset = query.get('limit', ['50'])[0], query.get('offset', ['0'])[0]
+            require(limit.isascii() and limit.isdigit() and 1 <= int(limit) <= 100
+                    and offset.isascii() and offset.isdigit() and int(offset) <= 10000, '线索分页条件无效。')
+            contactable = query.get('contactable', ['0'])[0]
+            require(contactable in {'0', '1'}, '联系意愿筛选无效。')
+            return self._json(store.staff_list(limit=int(limit), offset=int(offset),
+                status=query.get('status', [None])[0], contactable_only=contactable == '1'))
+        if not suffix.startswith('/') or suffix.count('/') != 1 or url.query:
+            raise FileNotFoundError()
+        lead_id = suffix[1:]
+        if post:
+            return self._json(store.staff_update(lead_id, self._json_body(MAX_TRIAL_FORM_JSON), actor=actor))
+        return self._json({'lead': store.staff_get(lead_id, actor=actor)})
+
     def _customer_route(self, url, *, post=False):
         if '%' in url.path:
             raise FileNotFoundError()
@@ -278,6 +377,8 @@ class WorkbenchHandler(BaseHTTPRequestHandler):
             token, _ = portal.new_session()
             return self._send(200, b'{"ready":true}', extra_headers={'Set-Cookie': portal.cookie_header(token)})
         owner = portal.session(self.headers.get('Cookie', ''))
+        if suffix.startswith('/trial/'):
+            return self._trial_customer(owner, suffix, url, post=post)
         parts = suffix[1:].split('/') if suffix.startswith('/') else []
         if not post and parts == ['quota']:
             if url.query:
@@ -287,18 +388,26 @@ class WorkbenchHandler(BaseHTTPRequestHandler):
             if not post:
                 if url.query:
                     raise FileNotFoundError()
-                return self._json(portal.list(owner))
+                result = portal.list(owner)
+                if self.server.trial_flow_enabled:
+                    for order in result['orders']:
+                        self._trial_order(owner, order)
+                return self._json(result)
             query = parse_qs(url.query, keep_blank_values=True, strict_parsing=True)
             require(set(query) == {'name'} and len(query['name']) == 1, '文件名无效。')
             if self.headers.get('Content-Type', '').split(';', 1)[0] != 'application/octet-stream':
                 raise WorkbenchError('每次只能上传一份 STEP/STP 原文件，不接收多文件表单或压缩包。', 'customer_step_only', 415)
-            return self._json(portal.upload(owner, query['name'][0], self._body(MAX_CUSTOMER_STEP_BYTES), self.headers.get('X-Event-Id')), 201)
+            self._trial_profile_required(owner)
+            order = portal.upload(owner, query['name'][0], self._body(MAX_CUSTOMER_STEP_BYTES), self.headers.get('X-Event-Id'))
+            return self._json(self._trial_order(owner, order), 201)
         if url.query or not parts or parts[0] != 'orders':
             raise FileNotFoundError()
         if len(parts) == 2 and not post:
-            return self._json(portal.get(owner, parts[1]))
+            return self._json(self._trial_order(owner, portal.get(owner, parts[1])))
         if post and len(parts) == 3 and parts[2] in {'start', 'retry'}:
-            return self._json(getattr(portal, parts[2])(owner, parts[1], self._json_body()), 202)
+            self._trial_profile_required(owner)
+            order = getattr(portal, parts[2])(owner, parts[1], self._json_body())
+            return self._json(self._trial_order(owner, order), 202)
         if not post and len(parts) == 5 and parts[2] == 'runs' and parts[4] == 'manufacturing':
             portal._owned(owner, parts[1])
             return self._geometry_json(lambda: portal.manufacturing(owner, parts[1], parts[3]))
@@ -306,7 +415,11 @@ class WorkbenchHandler(BaseHTTPRequestHandler):
             if not post:
                 portal._owned(owner, parts[1])
                 return self._geometry_json(lambda: portal.process_pricing(owner, parts[1], parts[3], None))
-            return self._json(portal.process_pricing(owner, parts[1], parts[3], self._json_body()), 201)
+            self._trial_profile_required(owner)
+            result = portal.process_pricing(owner, parts[1], parts[3], self._json_body())
+            if isinstance(result.get('order'), dict):
+                self._trial_order(owner, result['order'])
+            return self._json(result, 201)
         if not post and len(parts) == 7 and parts[2] == 'runs' and parts[4] == 'manufacturing':
             portal._owned(owner, parts[1])
             return self._geometry_file(
@@ -381,6 +494,8 @@ class WorkbenchHandler(BaseHTTPRequestHandler):
             return self._send(303, b'', extra_headers={'Location': login_destination(url.query)})
         if path == CUSTOMER_API or path.startswith(CUSTOMER_API + '/'):
             return self._customer_route(url)
+        if path == TRIAL_STAFF_API or path.startswith(TRIAL_STAFF_API + '/'):
+            return self._trial_staff(url)
         if path == CUSTOMER_ADMIN_API or path.startswith(CUSTOMER_ADMIN_API + '/'):
             return self._customer_admin(url)
         if path in {'/workbench/customer', '/workbench/customer/', '/workbench/customer/index.html'}:
@@ -389,7 +504,7 @@ class WorkbenchHandler(BaseHTTPRequestHandler):
             return self._send(303, b'', extra_headers={'Location': legacy_quotation_login(url.query)})
         if path == '/healthz':
             return self._json({'ok': True, 'version': '1.0.0'})
-        if path in {'/workbench', '/workbench/orders', '/workbench/legacy', '/workbench/recognition', '/workbench/cad', '/workbench/quotation', '/workbench/quotation/part', '/workbench/experience'}:
+        if path in {'/workbench', '/workbench/orders', '/workbench/legacy', '/workbench/recognition', '/workbench/cad', '/workbench/quotation', '/workbench/quotation/part', '/workbench/experience', '/workbench/leads'}:
             self.send_response(308)
             self.send_header('Location', path + '/' + ('?' + url.query if url.query else ''))
             self.send_header('Content-Length', '0')
@@ -553,6 +668,8 @@ class WorkbenchHandler(BaseHTTPRequestHandler):
         url = urlsplit(self.path)
         if url.path == CUSTOMER_API or url.path.startswith(CUSTOMER_API + '/'):
             return self._customer_route(url, post=True)
+        if url.path == TRIAL_STAFF_API or url.path.startswith(TRIAL_STAFF_API + '/'):
+            return self._trial_staff(url, post=True)
         if url.path == CUSTOMER_ADMIN_API or url.path.startswith(CUSTOMER_ADMIN_API + '/'):
             return self._customer_admin(url, post=True)
         if url.path == CASE_API or url.path.startswith(CASE_API + '/'):
@@ -710,7 +827,8 @@ class WorkbenchHandler(BaseHTTPRequestHandler):
         self._dispatch(self._post)
 
 
-def make_server(app, port=3092):
+def make_server(app, port=3092, *, trial_flow_enabled=False):
+    require(type(trial_flow_enabled) is bool, '体验流程配置无效。')
     server = ThreadingHTTPServer(('127.0.0.1', port), WorkbenchHandler)
     server.geometry_request_gate = threading.BoundedSemaphore(1)
     server.app = app
@@ -726,6 +844,8 @@ def make_server(app, port=3092):
     customer_manufacturing = CadManufacturingService(customer_cad)
     server.customer_batches = CustomerBatchQuoteService(app.meta / 'customer-quotes', customer_cad, customer_manufacturing)
     server.customer_upload = CustomerUploadService(app.meta / 'customer-upload-access', server.customer_batches)
+    server.trial_flow_enabled = trial_flow_enabled
+    server.trial_leads = TrialLeadStore(app.meta / 'trial-leads')
     from order_service import OrderService
     server.orders = OrderService(app)
     server.daemon_threads = True
@@ -751,7 +871,9 @@ def main(argv=None):
     app = Workbench(args.root, catalog=PriceCatalog(args.price_db), reader_root=args.reader_root,
                     bridge_factory=lambda workspace: AgentBridge(legacy_url, workspace))
     app.resume_reads()
-    with make_server(app, args.port) as server:
+    trial_mode = os.environ.get('FABFLOW_TRIAL_FLOW_ENABLED', '0')
+    require(trial_mode in {'0', '1'}, '体验流程配置无效。')
+    with make_server(app, args.port, trial_flow_enabled=trial_mode == '1') as server:
         # Existing recognition records derive their workspace from this root.
         # Keep historical roots so restart inspects admitted sessions in place.
         server.batch_quotes.engineering_recognition.configure(app.reader_root / 'batch-engineering', legacy_url)

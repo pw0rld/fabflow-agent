@@ -58,6 +58,13 @@ async function main() {
     assert(cookie && cookie.httpOnly && cookie.secure && cookie.path === '/workbench/customer/');
     assert.equal(await page.getByTestId('trial-history-order').count(), 0);
     assert.equal(await page.locator('#trial-history, .fft-history, .fft-footer, .fft-quota').count(), 0);
+    await page.waitForFunction(() => document.querySelector('[data-testid="trial-page"]')?.getAttribute('data-lead-flow') !== 'loading');
+    if (await page.getByTestId('trial-page').getAttribute('data-lead-flow') === 'enabled') {
+      await page.getByTestId('trial-profile-form').waitFor();
+      assert.equal(await page.getByTestId('trial-contact-consent').isChecked(), false);
+      assert((await page.getByTestId('trial-contact-profile').innerText()).includes('未验证'));
+      report.lead_capture = { enabled: true, verification_status: 'unverified', contact_opt_in_default: false };
+    }
     const text = await page.locator('body').innerText();
     for (const phrase of ['我的询价', '本浏览器的提交记录', '刷新体验额度', '共享体验额度',
       'FabFlow · 从 CAD 到制造报价', '原生几何量测 · 工程候选待审核'])

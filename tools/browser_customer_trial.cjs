@@ -112,6 +112,8 @@ async function mockedContext(browser, viewport, options = {}) {
       const suffix = url.pathname.slice(API.length);
       let body, status = 200;
       if (suffix === '/session' && method === 'POST') body = { ready: true };
+      else if (suffix === '/trial/profile' && method === 'GET')
+        body = { enabled: false, verification_available: false, profile: null };
       else if (suffix === '/quota' && method === 'GET') {
         state.quotaReads += 1;
         if (!state.quotaReleased) await quotaGate;
