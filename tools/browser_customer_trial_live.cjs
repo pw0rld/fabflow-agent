@@ -25,30 +25,50 @@ async function main() {
       return route.continue();
     });
     const page = await context.newPage();
+    let quotaResult = null;
+    let quotaParseFailed = false;
     page.setDefaultTimeout(25000);
     page.on('pageerror', error => report.page_errors.push(error.message));
     page.on('response', response => {
       const url = new URL(response.url());
       if (['/workbench/customer/api/session', '/workbench/customer/api/quota', '/workbench/customer/api/orders'].includes(url.pathname))
         report.response_statuses[url.pathname] = response.status();
+      if (url.pathname === '/workbench/customer/api/quota' && response.status() === 200) {
+        void response.json().then(value => {
+          if (value?.scope !== 'global' || value.limit !== 10 || !Number.isSafeInteger(value.remaining)
+              || value.remaining < 0 || value.remaining > 10 || typeof value.blocked !== 'boolean') throw Error('Invalid server availability response.');
+          quotaResult = { remaining: value.remaining, blocked: value.blocked };
+        }).catch(() => { quotaParseFailed = true; });
+      }
     });
     const response = await page.goto(target.href, { waitUntil: 'networkidle' });
     assert.equal(response.status(), 200);
     await page.getByTestId('trial-page').waitFor();
-    await page.waitForFunction(() => /^\d+$/.test(document.querySelector('[data-testid="trial-quota"] strong')?.textContent?.trim() || ''), null, { timeout: 25000 });
+    await page.waitForFunction(() => document.querySelector('[data-testid="trial-page"]')?.getAttribute('data-session-ready') === 'true', null, { timeout: 25000 });
+    const deadline = Date.now() + 25000;
+    while ((!quotaResult || report.response_statuses['/workbench/customer/api/orders'] !== 200) && !quotaParseFailed && Date.now() < deadline)
+      await new Promise(resolve => setTimeout(resolve, 50));
+    assert(!quotaParseFailed && quotaResult, 'A valid server availability response is required.');
     for (const endpoint of ['session', 'quota', 'orders']) assert.equal(report.response_statuses['/workbench/customer/api/' + endpoint], 200);
-    const remaining = Number(await page.locator('[data-testid="trial-quota"] strong').innerText());
+    const remaining = quotaResult.remaining;
     assert(remaining >= 0 && remaining <= 10);
-    assert.equal(await page.getByTestId('trial-file-input').isDisabled(), remaining === 0);
+    if (quotaResult.blocked || remaining === 0) await page.waitForFunction(() => document.querySelector('[data-testid="trial-page"]')?.getAttribute('data-upload-state') === 'unavailable');
+    assert.equal(await page.getByTestId('trial-file-input').isDisabled(), quotaResult.blocked || remaining === 0);
     const cookie = (await context.cookies(target.origin + '/workbench/customer/api/orders')).find(value => value.name === 'HYL_CUSTOMER_SESSION');
     assert(cookie && cookie.httpOnly && cookie.secure && cookie.path === '/workbench/customer/');
     assert.equal(await page.getByTestId('trial-history-order').count(), 0);
+    assert.equal(await page.locator('#trial-history, .fft-history, .fft-footer, .fft-quota').count(), 0);
+    const text = await page.locator('body').innerText();
+    for (const phrase of ['我的询价', '本浏览器的提交记录', '刷新体验额度', '共享体验额度',
+      'FabFlow · 从 CAD 到制造报价', '原生几何量测 · 工程候选待审核'])
+      assert(!text.includes(phrase), 'Removed customer chrome is still visible: ' + phrase);
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
     assert.deepEqual(report.page_errors, []);
     assert.deepEqual(report.blocked_requests, []);
     await page.screenshot({ path: path.join(output, 'live-entry.png'), fullPage: true });
     report.anonymous_session_verified = true;
     report.cookie_scope_preserved = true;
+    report.quota_controls_and_history_hidden = true;
     report.remaining_uploads = remaining;
     report.passed = true;
   } finally {

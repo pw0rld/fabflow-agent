@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ArrowDownToLine, ArrowRight, Box, Check, ChevronRight, CircleHelp, Clock3, FileCheck2, FileText, FolderOpen, History, Layers3, LoaderCircle, Plus, RefreshCw, RotateCcw, Scale, ShieldCheck, UploadCloud } from 'lucide-react'
+import { ArrowDownToLine, ArrowRight, Box, Check, ChevronRight, CircleHelp, Clock3, FileCheck2, FileText, Layers3, LoaderCircle, Plus, RefreshCw, RotateCcw, Scale, ShieldCheck, UploadCloud } from 'lucide-react'
 import BatchPartViewer, { safePartPreviewUrl } from '@/components/batch-part-viewer'
 import SourceAssemblyPreview from '@/components/source-assembly-preview'
 import ProcessQuotePanel from '@/components/process-quote-panel'
@@ -36,7 +36,7 @@ const eventId = () => 'customer-' + crypto.randomUUID()
 const money = (value: string | null | undefined) => value == null || !Number.isFinite(Number(value)) ? '待核算' : `¥${Number(value).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 const date = (value: string) => new Date(value).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 function validateQuota(value: Quota) {
-  if (!value || value.scope !== 'global' || value.limit !== 10 || !Number.isSafeInteger(value.used) || value.used < 0 || !Number.isSafeInteger(value.remaining) || value.remaining < 0 || value.remaining !== Math.max(0, value.limit - value.used) || value.max_files !== 1 || value.max_bytes !== 20 * 1024 * 1024 || typeof value.blocked !== 'boolean' || !Array.isArray(value.accepted_extensions) || value.accepted_extensions.length !== 2 || !value.accepted_extensions.includes('.step') || !value.accepted_extensions.includes('.stp')) throw new Error('暂未读取到体验额度，请刷新后再上传。')
+  if (!value || value.scope !== 'global' || value.limit !== 10 || !Number.isSafeInteger(value.used) || value.used < 0 || !Number.isSafeInteger(value.remaining) || value.remaining < 0 || value.remaining !== Math.max(0, value.limit - value.used) || value.max_files !== 1 || value.max_bytes !== 20 * 1024 * 1024 || typeof value.blocked !== 'boolean' || !Array.isArray(value.accepted_extensions) || value.accepted_extensions.length !== 2 || !value.accepted_extensions.includes('.step') || !value.accepted_extensions.includes('.stp')) throw new Error('暂时无法提交，请稍后重试。')
   return value
 }
 function quoteUrl(value: string | undefined, order: CustomerOrder, print = false) {
@@ -53,7 +53,7 @@ function partAsset(part: Part, order: CustomerOrder, type: 'geometry' | 'thumbna
 
 export default function CustomerTrial() {
   const [ready, setReady] = useState(false), [orders, setOrders] = useState<CustomerOrder[]>([]), [selected, setSelected] = useState<string | null>(null)
-  const [quota, setQuota] = useState<Quota | null>(null), [quotaLoading, setQuotaLoading] = useState(false), [quotaError, setQuotaError] = useState('')
+  const [quota, setQuota] = useState<Quota | null>(null), [quotaLoading, setQuotaLoading] = useState(false)
   const [file, setFile] = useState<File | null>(null), [quantity, setQuantity] = useState('1'), [submitting, setSubmitting] = useState(false), [loading, setLoading] = useState(false)
   const [error, setError] = useState(''), [connectionError, setConnectionError] = useState(''), [dragging, setDragging] = useState(false), [poll, setPoll] = useState(0)
   const [tab, setTab] = useState<'model' | 'parts' | 'quote'>('model'), [manifest, setManifest] = useState<Manifest | null>(null), [partId, setPartId] = useState<string | null>(null)
@@ -63,7 +63,8 @@ export default function CustomerTrial() {
   const uploadAttempt = useRef<UploadAttempt | null>(null), startAttempt = useRef<StartAttempt | null>(null)
   const current = orders.find(order => order.id === selected) || null
   const running = busy(current?.status), hasQuote = !!current?.quote
-  const canUpload = ready && !!quota && !quota.blocked && quota.remaining > 0 && !quotaLoading
+  const quotaBlocked = !!quota && (quota.blocked || quota.remaining < 1)
+  const canUpload = ready && !quotaBlocked && !quotaLoading
   const recoverUpload = !current && !!file && uploadAttempt.current?.file === file && uploadAttempt.current.submitted && uploadAttempt.current.uncertain
   const recoverProcessing = !!current && startAttempt.current?.id === current.id && startAttempt.current.submitted && startAttempt.current.uncertain
   const selectedPart = manifest?.parts.find(part => part.id === partId) || manifest?.parts[0] || null
@@ -83,9 +84,9 @@ export default function CustomerTrial() {
     try { if (order) localStorage.setItem(LAST, order.id); else localStorage.removeItem(LAST) } catch { /* Storage is optional; server cookie owns orders. */ }
   }, [])
   const refreshQuota = useCallback(async () => {
-    const epoch = ++quotaEpoch.current; setQuotaLoading(true); setQuotaError('')
+    const epoch = ++quotaEpoch.current; setQuotaLoading(true)
     try { const value = validateQuota(await request<Quota>('/quota')); if (mounted.current && epoch === quotaEpoch.current) setQuota(value); return value }
-    catch (failure) { if (mounted.current && epoch === quotaEpoch.current) { setQuota(null); setQuotaError(failure instanceof Error ? failure.message : '体验额度暂不可用。') }; return null }
+    catch { if (mounted.current && epoch === quotaEpoch.current) setQuota(null); return null }
     finally { if (mounted.current && epoch === quotaEpoch.current) setQuotaLoading(false) }
   }, [])
   const initialize = useCallback(async () => {
@@ -95,7 +96,7 @@ export default function CustomerTrial() {
       if (!mounted.current) return
       setReady(true); setOrders(result.orders); void refreshQuota()
       let last = selectedRef.current; try { last = last || localStorage.getItem(LAST) } catch { /* Optional. */ }
-      const saved = result.orders.find(order => validOrder(last) && order.id === last); if (saved) choose(saved)
+      const saved = result.orders.find(order => validOrder(last) && order.id === last) || result.orders[0]; if (saved) choose(saved)
     } catch (failure) { if (mounted.current) setConnectionError(failure instanceof Error ? failure.message : '暂时无法连接。') }
     finally { if (mounted.current) setLoading(false) }
   }, [choose, refreshQuota])
@@ -130,10 +131,10 @@ export default function CustomerTrial() {
 
   function pick(files: FileList | null) {
     setDragging(false); setError('')
-    if (uploadAttempt.current?.submitted && uploadAttempt.current.uncertain) { setError('请先恢复上次上传结果，或从我的询价打开已保存的资料。'); return }
+    if (uploadAttempt.current?.submitted && uploadAttempt.current.uncertain) { setError('请先恢复上次上传结果，再选择新文件。'); return }
     setFile(null); uploadAttempt.current = null; startAttempt.current = null
     if (!files || files.length !== 1) { setError('每次请选择一份 STEP / STP 文件。'); return }
-    if (!canUpload) { setError(quota?.remaining === 0 ? '本轮新上传额度已用完，已有询价仍可查看。' : '请先刷新体验额度。'); return }
+    if (quotaBlocked) { setError('当前暂不接受新文件，请联系工作人员。'); return }
     const chosen = files[0]
     if (!/\.(step|stp)$/i.test(chosen.name)) { setError('目前仅接收 STEP / STP，不接收压缩包或其他格式。'); return }
     if (!chosen.size || chosen.size > 20 * 1024 * 1024) { setError('请选择非空文件，大小不超过 20 MB。'); return }
@@ -150,7 +151,7 @@ export default function CustomerTrial() {
         const saved = uploadAttempt.current, replay = recovery === 'upload' && saved?.file === file && saved.submitted && saved.uncertain
         if (recovery === 'upload' && !replay) throw new Error('当前没有可恢复的上传请求。')
         const latest = await refreshQuota()
-        if (!replay && (!latest || latest.blocked || latest.remaining < 1)) throw new Error(latest?.remaining === 0 ? '本轮新上传额度已用完，已有询价仍可继续处理。' : '体验额度暂不可用，请稍后刷新。')
+        if (!replay && (!latest || latest.blocked || latest.remaining < 1)) throw new Error(latest && (latest.blocked || latest.remaining < 1) ? '当前暂不接受新文件，请联系工作人员。' : '暂时无法提交，请稍后重试。')
         const attempt = saved?.file === file ? saved : { file, event: eventId(), submitted: false, uncertain: false }
         uploadAttempt.current = attempt; attempt.submitted = true; attempt.uncertain = false
         try { order = await request<CustomerOrder>(`/orders?name=${encodeURIComponent(attempt.file.name)}`, { method: 'POST', headers: { 'Content-Type': 'application/octet-stream', 'X-Event-Id': attempt.event }, body: attempt.file }); if (!validOrder(order.id)) throw new Error('上传结果未确认，请恢复本次请求。') }
@@ -185,19 +186,19 @@ export default function CustomerTrial() {
     finally { setLoading(false) }
   }
   const total = Math.max(0, Number(current?.progress?.total) || 0), done = Math.max(0, Math.min(total, Number(current?.progress?.done) || 0))
-  return <main className="fft" data-testid="trial-page">
-    <header className="fft-header"><a className="fft-brand" href="/try/" aria-label="FabFlow 首页"><span><Box size={24} strokeWidth={1.7}/></span><strong>FabFlow<span>制造报价体验</span></strong></a><div className="fft-header-right"><span className="fft-private"><ShieldCheck size={15}/>专属询价空间</span><a href="#trial-history"><History size={15}/>我的询价{orders.length > 0 && <i>{orders.length}</i>}</a></div></header>
+  return <main className="fft" data-testid="trial-page" data-session-ready={ready ? 'true' : 'false'} data-upload-state={quotaBlocked ? 'unavailable' : ready ? 'ready' : 'connecting'}>
+    <header className="fft-header"><a className="fft-brand" href="/try/" aria-label="FabFlow 首页"><span><Box size={24} strokeWidth={1.7}/></span><strong>FabFlow<span>制造报价体验</span></strong></a><div className="fft-header-right"><span className="fft-private"><ShieldCheck size={15}/>专属询价空间</span></div></header>
     <div className="fft-shell"><section className="fft-intro"><div><span className="fft-eyebrow">FROM CAD TO QUOTE</span><h1>上传模型，<em>让报价开始。</em></h1><p>看清装配与零件，查看材料、工艺和报价草稿。</p></div><div className="fft-hero-note"><span><ShieldCheck size={17}/>仅本浏览器可查看自己的询价</span><small>STEP 原生读取 · 后台持续处理</small></div></section>
       <nav className="fft-steps" aria-label="询价流程">{[{ label: '上传模型', note: 'STEP / STP' }, { label: '模型与零件', note: '原生拆件与参数' }, { label: '查看报价', note: '估价草稿，待审核' }].map((step, index) => <button type="button" key={step.label} className={phase === index + 1 ? 'active' : phase > index + 1 ? 'done' : ''} aria-current={phase === index + 1 ? 'step' : undefined} disabled={index > 0 && !current || index === 2 && !hasQuote} onClick={() => { if (index === 0 && !submitting && !recoverUpload && !recoverProcessing) choose(null); else if (index === 1) setTab('model'); else if (index === 2) setTab('quote') }}><b>{phase > index + 1 ? <Check size={17}/> : `0${index + 1}`}</b><span><strong>{step.label}</strong><small>{step.note}</small></span>{index < 2 && <ChevronRight size={17}/>}</button>)}</nav>
       {connectionError && <div className="fft-alert" role="status"><span>{connectionError}{running && ' 后台仍会继续处理。'}</span><button type="button" onClick={() => void (ready && current ? refresh() : initialize())} disabled={loading}><RefreshCw size={14}/>重新连接</button></div>}
       <div className="fft-layout"><aside className="fft-config"><div className="fft-card-top"><span>询价配置</span>{current && <button type="button" onClick={() => choose(null)} disabled={submitting || !!recoverProcessing}><Plus size={14}/>新建</button>}</div>
-        {current ? <div className="fft-file-selected"><span><Box size={24}/></span><div><strong>{current.name}</strong><small>{date(current.created_at)}</small></div><FileCheck2 size={17}/></div> : <><input ref={input} hidden type="file" accept=".step,.stp" aria-label="上传 STEP 模型" data-testid="trial-file-input" disabled={!canUpload || submitting || !!recoverUpload} onChange={event => { pick(event.target.files); event.target.value = '' }}/><button type="button" className={`fft-drop${dragging ? ' dragging' : ''}${file ? ' selected' : ''}`} data-testid="trial-dropzone" disabled={!canUpload || submitting || !!recoverUpload} onClick={() => input.current?.click()} onDragOver={event => { event.preventDefault(); if (canUpload && !submitting && !recoverUpload) setDragging(true) }} onDragLeave={() => setDragging(false)} onDrop={event => { event.preventDefault(); if (!submitting && !recoverUpload) pick(event.dataTransfer.files) }}><span><UploadCloud size={29} strokeWidth={1.5}/></span><strong>{file ? file.name : '拖放 CAD 文件到这里'}</strong><small>{file ? `${(file.size / 1024 / 1024).toFixed(2)} MB · 点击更换` : '或点击选择文件'}</small><i>STEP / STP · 单文件 ≤ 20 MB</i></button></>}
+        {current ? <div className="fft-file-selected"><span><Box size={24}/></span><div><strong>{current.name}</strong><small>{date(current.created_at)}</small></div><FileCheck2 size={17}/></div> : <><input ref={input} hidden type="file" accept=".step,.stp" aria-label="上传 STEP 模型" data-testid="trial-file-input" disabled={quotaBlocked || submitting || !!recoverUpload} onChange={event => { pick(event.target.files); event.target.value = '' }}/><button type="button" className={`fft-drop${dragging ? ' dragging' : ''}${file ? ' selected' : ''}`} data-testid="trial-dropzone" disabled={quotaBlocked || submitting || !!recoverUpload} onClick={() => input.current?.click()} onDragOver={event => { event.preventDefault(); if (!quotaBlocked && !submitting && !recoverUpload) setDragging(true) }} onDragLeave={() => setDragging(false)} onDrop={event => { event.preventDefault(); if (!submitting && !recoverUpload) pick(event.dataTransfer.files) }}><span><UploadCloud size={29} strokeWidth={1.5}/></span><strong>{file ? file.name : '拖放 CAD 文件到这里'}</strong><small>{file ? `${(file.size / 1024 / 1024).toFixed(2)} MB · 点击更换` : '或点击选择文件'}</small><i>STEP / STP · 单文件 ≤ 20 MB</i></button></>}
         <div className="fft-quantity"><label htmlFor="trial-quantity">订单数量<span>套</span></label><input id="trial-quantity" data-testid="trial-quantity" type="number" min="1" max="100000" step="1" inputMode="numeric" value={quantity} disabled={!ready || submitting || !!recoverProcessing || !!current && current.status !== 'uploaded'} onChange={event => { setQuantity(event.target.value); startAttempt.current = null }}/><small>以本份 STEP 根装配为一套</small></div>
         <div className="fft-config-readonly"><div><span>材料与规格</span><strong>从 CAD 资料读取</strong></div><div><span>加工工艺</span><strong>按零件工程条件整理</strong></div><p>未标明或需工程判断的条件，会在结果中单独列出。</p></div>
         {!current && <button type="button" className="fft-primary fft-full" data-testid="trial-submit" disabled={!canUpload || !file || submitting || !!recoverUpload} onClick={() => void submit()}>{submitting ? <LoaderCircle size={17} className="fft-spin"/> : <ArrowRight size={17}/>}开始分析与询价</button>}
         {current?.status === 'uploaded' && <button type="button" className="fft-primary fft-full" data-testid="trial-start" disabled={submitting || !!recoverProcessing || current.can_start === false} onClick={() => void submit()}>{submitting ? <LoaderCircle size={17} className="fft-spin"/> : <ArrowRight size={17}/>}开始处理已保存模型</button>}
         {(recoverUpload || recoverProcessing) && <div className="fft-recovery"><strong>上次请求的结果待确认</strong><p>恢复同一次请求，不会新建重复询价。</p><button type="button" className="fft-secondary" data-testid="trial-recover" disabled={submitting} onClick={() => void submit(startAttempt.current?.action || 'start', recoverUpload ? 'upload' : 'processing')}><RotateCcw size={14}/>恢复本次请求</button></div>}
-        <div className="fft-quota" data-testid="trial-quota"><div><span>共享体验额度</span><button type="button" onClick={() => void refreshQuota()} disabled={!ready || quotaLoading || submitting} aria-label="刷新体验额度"><RefreshCw size={13} className={quotaLoading ? 'fft-spin' : ''}/></button></div><p>剩余 <strong>{quota ? quota.remaining : '—'}</strong> / {quota?.limit || 10} 次</p><small>所有客户合计；已保存询价不重复占用上传次数。</small>{quota?.remaining === 0 && <em>新上传额度已用完，已有询价仍可查看。</em>}{quotaError && <em role="status">{quotaError}</em>}</div>
+        {!current && quotaBlocked && <p className="fft-upload-unavailable" role="status" data-testid="trial-upload-unavailable">当前暂不接受新文件，请联系工作人员。</p>}
         <div className="fft-review-note"><CircleHelp size={15}/><p>体验结果为工程与报价草稿，以工厂审核确认为准。</p></div>
       </aside><section className="fft-workspace" aria-label="模型与报价结果" data-testid={current ? 'trial-current-order' : 'trial-workspace'}>
         {!current ? <div className="fft-empty" data-testid="trial-empty"><div className="fft-empty-art" aria-hidden="true"><span className="fft-orbit"/><span className="fft-outline-box"><Box size={74} strokeWidth={.8}/></span><i><Layers3 size={19}/></i><b><FileText size={18}/></b></div><span className="fft-eyebrow">YOUR NEXT PART STARTS HERE</span><h2>从一份 CAD，看清每个零件。</h2><p>上传后，在这里旋转查看总装、浏览拆件结果，<br/>再查看属于这笔询价的报价草稿。</p><div className="fft-empty-features"><span><Box size={17}/>原生 3D 预览</span><span><Layers3 size={17}/>零件与工程参数</span><span><FileText size={17}/>客户报价单</span></div></div> : <><div className="fft-workspace-heading"><div><span className={`fft-status${running ? ' running' : needsAttention ? ' attention' : ''}`}>{running ? <LoaderCircle size={13} className="fft-spin"/> : needsAttention ? <CircleHelp size={13}/> : <Check size={13}/>} {statuses[current.status] || '资料已保存'}</span><h2 title={current.name}>{current.name}</h2></div><button type="button" className="fft-icon" onClick={() => void refresh()} disabled={loading || submitting} aria-label="刷新当前询价"><RefreshCw size={17} className={loading ? 'fft-spin' : ''}/></button></div>
@@ -210,8 +211,6 @@ export default function CustomerTrial() {
           {!hasQuote && !running && current.status === 'uploaded' && <div className="fft-saved"><FileCheck2 size={45} strokeWidth={1.2}/><h3>模型已保存</h3><p>确认左侧数量，开始读取装配、拆分零件并整理报价。</p></div>}
         </>}
       </section></div>{error && <div className="fft-alert fft-error" role="alert" data-testid="trial-error">{error}</div>}
-      <details className="fft-history" id="trial-history"><summary><span><History size={18}/>我的询价<strong>{orders.length}</strong></span><small>本浏览器的提交记录</small><ChevronRight size={16}/></summary><div>{orders.length ? orders.map(order => <button type="button" key={order.id} data-testid="trial-history-order" data-order-id={order.id} className={selected === order.id ? 'selected' : ''} onClick={() => choose(order)} disabled={submitting || !!recoverUpload || !!recoverProcessing}><Box size={21}/><span><strong>{order.name}</strong><small>{date(order.created_at)} · {order.order_sets || 1} 套</small></span><em>{statuses[order.status] || '资料已保存'}</em><ArrowRight size={15}/></button>) : <p><FolderOpen size={20}/>{loading ? '正在载入询价记录' : '提交后，模型、处理进度与报价会保存在这里。'}</p>}</div></details>
-      <footer className="fft-footer"><span><Box size={16}/>FabFlow · 从 CAD 到制造报价</span><span>原生几何量测 · 工程候选待审核</span></footer>
     </div>{viewer && safePartPreviewUrl(viewer) && <BatchPartViewer key={viewer} previewUrl={viewer} customer onClose={() => setViewer(null)}/>}
   </main>
 }

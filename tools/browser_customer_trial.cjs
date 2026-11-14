@@ -18,6 +18,7 @@ assert(!fs.existsSync(output), 'Use a new output directory.');
 fs.mkdirSync(output, { recursive: true, mode: 0o700 });
 const report = { passed: false, target, checks: [], page_errors: [], blocked_requests: [],
   customer_api_mocked: true, real_uploads: 0, provider_requests: 0, production_quota_used: false };
+const contextStates = new WeakMap();
 const BATCH = 'BATCH-' + 'a'.repeat(32);
 const RUN = 'RUN-' + 'b'.repeat(32);
 const SOURCE_SHA = 'd'.repeat(64);
@@ -85,8 +86,14 @@ const thumbnail = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 140"
 async function mockedContext(browser, viewport, options = {}) {
   const context = await browser.newContext({ viewport, ignoreHTTPSErrors: true,
     reducedMotion: 'reduce', serviceWorkers: 'block' });
+  context.setDefaultTimeout(25000);
+  let releaseQuota;
+  const quotaGate = new Promise(resolve => { releaseQuota = resolve; });
   const state = { created: !!options.completed, started: false, uploadEvents: [], startEvents: [], detailReads: 0,
-    geometryReads: 0, artifactReads: 0, unknown: [] };
+    geometryReads: 0, artifactReads: 0, quotaReads: 0, quotaSuccesses: 0,
+    quotaAvailable: !options.unavailableQuota, quotaReleased: !options.holdQuota,
+    releaseQuota() { state.quotaReleased = true; releaseQuota(); }, unknown: [] };
+  contextStates.set(context, state);
   const currentOrder = () => {
     const value = options.completed ? completedOrder() : order(state.started ? 'running' : 'uploaded');
     if (options.partial) value.quote = { ...value.quote, total_price: '1234.50', estimated_subtotal: null,
@@ -105,11 +112,18 @@ async function mockedContext(browser, viewport, options = {}) {
       let body, status = 200;
       if (suffix === '/session' && method === 'POST') body = { ready: true };
       else if (suffix === '/quota' && method === 'GET') {
-        const remaining = options.exhausted ? 0 : state.created ? 7 : 8;
-        body = { ...quota, used: 10 - remaining, remaining, blocked: remaining === 0 };
+        state.quotaReads += 1;
+        if (!state.quotaReleased) await quotaGate;
+        if (!state.quotaAvailable) {
+          status = 503; body = { error: { message: 'Synthetic availability check has not completed.' } };
+        } else {
+          const remaining = options.exhausted ? 0 : state.created ? 7 : 8;
+          body = { ...quota, used: 10 - remaining, remaining, blocked: remaining === 0 };
+        }
       }
       else if (suffix === '/orders' && method === 'GET') body = { orders: state.created ? [currentOrder()] : [] };
       else if (suffix === '/orders' && method === 'POST') {
+        assert(state.quotaSuccesses > 0, 'A file cannot be uploaded before a successful server-side availability check.');
         assert.equal(url.searchParams.get('name'), 'browser-fixture.step');
         assert(request.headers()['x-event-id'], 'Upload must keep an idempotency event.');
         state.uploadEvents.push(request.headers()['x-event-id']); state.created = true;
@@ -135,8 +149,10 @@ async function mockedContext(browser, viewport, options = {}) {
         return route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><html lang="zh-CN"><body><h1>合成客户报价单</h1><p>10套 · SUS304 · 2项物料</p><strong>¥1,234.50</strong><p>报价草稿 · 待审核</p></body></html>' });
       }
       else { state.unknown.push(method + ' ' + suffix); body = { error: { message: 'Unexpected mock request.' } }; status = 404; }
-      return route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body),
+      await route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body),
         headers: { 'Cache-Control': 'no-store' } });
+      if (suffix === '/quota' && status === 200) state.quotaSuccesses += 1;
+      return;
     }
     // Public shells and fixed bundled assets are GET-only. Never let an
     // accidental endpoint change turn this acceptance into a real submission.
@@ -153,18 +169,36 @@ async function fits(page, label) {
   assert(bounds.width <= bounds.viewport + 2, label + ': ' + JSON.stringify(bounds));
 }
 
-async function open(context, { exhausted = false } = {}) {
+async function until(predicate, message, timeout = 20000) {
+  const deadline = Date.now() + timeout;
+  while (!predicate() && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 50));
+  assert(predicate(), message);
+}
+
+async function simplifiedChrome(page) {
+  assert.equal(await page.locator('#trial-history, .fft-history, .fft-footer, .fft-quota').count(), 0);
+  assert.equal(await page.getByTestId('trial-history-order').count(), 0);
+  const text = await page.locator('body').innerText();
+  for (const phrase of ['请先刷新体验额度', '刷新体验额度', '共享体验额度', '本浏览器的提交记录', '我的询价',
+    'FabFlow · 从 CAD 到制造报价', '原生几何量测 · 工程候选待审核'])
+    assert(!text.includes(phrase), 'Removed customer chrome is still visible: ' + phrase);
+}
+
+async function open(context, { exhausted = false, quotaPending = false, waitUntil = 'networkidle' } = {}) {
   const page = await context.newPage();
   page.on('pageerror', error => report.page_errors.push(error.message));
-  await page.goto(target, { waitUntil: 'networkidle' });
+  await page.goto(target, { waitUntil });
   await page.getByTestId('trial-page').waitFor();
   await page.getByTestId('trial-file-input').waitFor({ state: 'attached' });
   assert.equal(await page.getByTestId('trial-file-input').getAttribute('multiple'), null);
   const accept = await page.getByTestId('trial-file-input').getAttribute('accept');
   assert(accept.includes('.step') && accept.includes('.stp'));
   assert(!/zip|rar|pdf/i.test(accept));
-  await page.waitForFunction(() => /^\d+$/.test(document.querySelector('[data-testid="trial-quota"] strong')?.textContent?.trim() || ''));
-  if (!exhausted) await page.waitForFunction(() => !document.querySelector('[data-testid="trial-file-input"]')?.disabled);
+  await page.waitForFunction(() => document.querySelector('[data-testid="trial-page"]')?.getAttribute('data-session-ready') === 'true');
+  if (!quotaPending) await until(() => contextStates.get(context).quotaSuccesses > 0, 'Initial availability check did not complete.');
+  if (exhausted) await page.waitForFunction(() => document.querySelector('[data-testid="trial-page"]')?.getAttribute('data-upload-state') === 'unavailable');
+  else await page.waitForFunction(() => !document.querySelector('[data-testid="trial-file-input"]')?.disabled);
+  await simplifiedChrome(page);
   return page;
 }
 
@@ -178,6 +212,7 @@ async function main() {
     await fits(page, 'Desktop');
     await page.screenshot({ path: path.join(output, 'desktop-entry.png'), fullPage: true });
     report.checks.push('Dedicated desktop entry hydrates without customer API access or overflow.');
+    report.checks.push('Customer quota controls, inquiry-history navigation/list and footer copy are absent.');
     const input = page.getByTestId('trial-file-input');
     await input.setInputFiles({ name: 'unsupported.zip', mimeType: 'application/zip', buffer: Buffer.from('not-an-archive') });
     await page.getByTestId('trial-error').waitFor();
@@ -227,12 +262,65 @@ async function main() {
 
     const exhausted = await mockedContext(browser, { width: 390, height: 844 }, { exhausted: true });
     const exhaustedPage = await open(exhausted.context, { exhausted: true });
-    await exhaustedPage.waitForFunction(() => document.querySelector('[data-testid="trial-quota"]')?.textContent?.includes('用完'));
+    await exhaustedPage.getByTestId('trial-upload-unavailable').waitFor();
+    assert((await exhaustedPage.getByTestId('trial-upload-unavailable').innerText()).includes('当前暂不接受新文件'));
     assert.equal(await exhaustedPage.getByTestId('trial-file-input').isDisabled(), true);
     assert.equal(await exhaustedPage.getByTestId('trial-submit').isDisabled(), true);
     assert.equal(exhausted.state.uploadEvents.length, 0);
     await exhausted.context.close();
     report.checks.push('Exhausted shared quota disables new upload controls without submitting a request.');
+
+    const delayed = await mockedContext(browser, { width: 1440, height: 1024 }, { holdQuota: true });
+    const delayedPage = await open(delayed.context, { quotaPending: true, waitUntil: 'domcontentloaded' });
+    await until(() => delayed.state.quotaReads > 0, 'The background availability check was not requested.');
+    await delayedPage.getByTestId('trial-file-input').setInputFiles({ name: 'browser-fixture.step', mimeType: 'application/octet-stream',
+      buffer: Buffer.from('ISO-10303-21;\nHEADER;\nENDSEC;\nDATA;\nENDSEC;\nEND-ISO-10303-21;\n') });
+    await delayedPage.getByTestId('trial-quantity').fill('10');
+    assert((await delayedPage.getByTestId('trial-dropzone').innerText()).includes('browser-fixture.step'));
+    assert.equal(delayed.state.uploadEvents.length, 0);
+    assert.equal(delayed.state.quotaSuccesses, 0);
+    await simplifiedChrome(delayedPage);
+    const delayedSubmit = delayedPage.getByTestId('trial-submit');
+    const submittedWhileChecking = !await delayedSubmit.isDisabled();
+    if (submittedWhileChecking) {
+      await delayedSubmit.click();
+      await until(() => delayed.state.quotaReads >= 2, 'Submission must perform a fresh server check.');
+      assert.equal(delayed.state.uploadEvents.length, 0);
+    }
+    delayed.state.releaseQuota();
+    if (!submittedWhileChecking) {
+      await until(() => delayed.state.quotaSuccesses > 0, 'Delayed server check did not complete.');
+      await delayedSubmit.click();
+    }
+    await delayedPage.getByTestId('trial-progress').waitFor();
+    assert.equal(delayed.state.uploadEvents.length, 1);
+    assert.equal(delayed.state.startEvents.length, 1);
+    assert(delayed.state.quotaSuccesses > 0);
+    await delayed.context.close();
+    report.checks.push('A STEP can be selected while availability is pending; upload waits for a successful server check.');
+
+    const unavailable = await mockedContext(browser, { width: 1440, height: 1024 }, { unavailableQuota: true });
+    const unavailablePage = await open(unavailable.context, { quotaPending: true });
+    await until(() => unavailable.state.quotaReads > 0, 'Initial unavailable check was not requested.');
+    await unavailablePage.getByTestId('trial-file-input').setInputFiles({ name: 'browser-fixture.step', mimeType: 'application/octet-stream',
+      buffer: Buffer.from('ISO-10303-21;\nHEADER;\nENDSEC;\nDATA;\nENDSEC;\nEND-ISO-10303-21;\n') });
+    await unavailablePage.getByTestId('trial-quantity').fill('10');
+    await simplifiedChrome(unavailablePage);
+    const unavailableReads = unavailable.state.quotaReads;
+    await unavailablePage.getByTestId('trial-submit').click();
+    await until(() => unavailable.state.quotaReads > unavailableReads, 'Submission did not recheck server availability.');
+    await unavailablePage.getByTestId('trial-error').waitFor();
+    assert.equal(unavailable.state.uploadEvents.length, 0);
+    assert.equal(unavailable.state.startEvents.length, 0);
+    assert.equal(unavailable.state.quotaSuccesses, 0);
+    await simplifiedChrome(unavailablePage);
+    unavailable.state.quotaAvailable = true;
+    await unavailablePage.getByTestId('trial-submit').click();
+    await unavailablePage.getByTestId('trial-progress').waitFor();
+    assert.equal(unavailable.state.uploadEvents.length, 1);
+    assert.equal(unavailable.state.startEvents.length, 1);
+    await unavailable.context.close();
+    report.checks.push('An unavailable background check does not block choosing a file or permit upload; an explicit retry rechecks before one submission.');
 
     const recovery = await mockedContext(browser, { width: 1440, height: 1024 }, { loseFirstUpload: true });
     const recoveryPage = await open(recovery.context);
