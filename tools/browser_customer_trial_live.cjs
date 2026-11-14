@@ -6,7 +6,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 process.env.PLAYWRIGHT_BROWSERS_PATH ||= '/srv/dsh/build-runtime/ms-playwright';
 const { chromium } = require(process.env.FABFLOW_PLAYWRIGHT_MODULE || '/srv/dsh/build-runtime/node_modules/playwright');
-const target = new URL(process.env.TRIAL_URL || 'https://8.135.55.251/try/');
+const target = new URL(process.env.TRIAL_URL || 'https://8.135.55.251/try/?mode=upload');
 const output = process.env.TRIAL_BROWSER_OUT;
 assert(output && path.isAbsolute(output) && !fs.existsSync(output));
 fs.mkdirSync(output, { recursive: true, mode: 0o700 });

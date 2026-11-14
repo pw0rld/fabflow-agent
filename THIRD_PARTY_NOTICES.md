@@ -9,6 +9,8 @@ their components.
 - `web/cad-preview/vendor/dwg/`: LibreDWG Web components; see `COPYING`, `README.md` and `SOURCE.json` for GPL notices and corresponding upstream source information.
 - `samples/public-enclosure-20261026/`: Laser4DIY enclosure, unmodified source/reference CAD, CERN-OHL-P-v2. See its license, README and source manifest.
 - `samples/cad-test-20261019/step/`: FreeCAD library NEMA-17 bracket, CC BY 3.0. See `ATTRIBUTION.txt`, upstream README and source metadata.
+- `samples/public-cad-examples-20261114/`: CADProps original flanged bushing, CC0-1.0. The upstream repository has mixed per-part licenses; only the specifically identified original CC0 part is included. See the retained per-part metadata and license scope.
+- `web/public-examples/`: precomputed views of the three licensed samples above. Original STEP bytes are unchanged; FabFlow-derived display meshes and source-definition groupings retain each model's attribution and license notices. Illustrative quotations use explicit generic assumptions, never customer or factory price records.
 - Frontend and Python package dependencies retain their respective upstream licenses; package versions are recorded in the manifests and lock files.
 
 Private customer drawings, pricing workbooks and production records are not part

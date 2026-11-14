@@ -11,4 +11,6 @@
 *.jpg binary
 *.jpeg binary
 samples/** -text -diff -whitespace
+web/public-examples/*/source.step -text -diff -whitespace
+web/public-examples/*/geometry.json -text -diff -whitespace
 web/cad-preview/vendor/** -text -diff -whitespace

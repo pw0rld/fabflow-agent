@@ -177,7 +177,7 @@ async function main() {
       '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
   try {
     const customer = await mocked(browser, { width: 1440, height: 1080 }, { loseInterest: true });
-    const page = await pageFor(customer.context, '/try/');
+    const page = await pageFor(customer.context, '/try/?mode=upload');
     await page.getByTestId('trial-profile-form').waitFor();
     assert.equal(await page.getByTestId('trial-contact-consent').isChecked(), false);
     await page.getByTestId('trial-file-input').setInputFiles({ name: 'flow-fixture.step', mimeType: 'application/octet-stream',

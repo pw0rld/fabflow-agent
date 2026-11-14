@@ -27,6 +27,7 @@ from workbench_access import (IDENTITY_PATH, LOGIN_PATH, staff_identity, login_d
                               legacy_quotation_login, legacy_customer_root)
 from customer_upload_quota import MAX_BYTES as MAX_CUSTOMER_STEP_BYTES
 from trial_leads import TrialLeadStore
+from public_examples import PublicExamples, PREFIX as PUBLIC_EXAMPLES_PREFIX
 
 APP_ROOT = Path(__file__).resolve().parents[1]
 API = '/workbench/api'
@@ -483,6 +484,16 @@ class WorkbenchHandler(BaseHTTPRequestHandler):
         url = urlsplit(self.path)
         path = url.path
         app = self.server.app
+        if path.startswith(PUBLIC_EXAMPLES_PREFIX):
+            if '?' in self.path or url.fragment:
+                raise FileNotFoundError()
+            def public_asset():
+                asset = PublicExamples(APP_ROOT / 'web/public-examples').read(path, query=url.query)
+                return self._send(200, asset.content, asset.content_type, filename=asset.filename,
+                                  attachment=asset.filename is not None)
+            if path.endswith('/geometry.json'):
+                return self._geometry_response(public_asset)
+            return public_asset()
         # These exact endpoints rely on Nginx Basic before reaching this
         # loopback-only server. Customer cookies and client role hints never
         # grant operator access. Only identity has an anonymous Nginx fallback.
