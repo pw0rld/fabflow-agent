@@ -1,7 +1,7 @@
-"""Two real Responses calls against the already configured DSH OpenAI gateway.
+"""Two Responses calls against the configured server-owned model endpoint.
 
 No sample manifest, geometry, answer file, or browser fixture is consulted here.
-The gateway and credential are loaded privately on ZeroClave, never sent to UI.
+The endpoint and credential are loaded from environment, never sent to UI.
 """
 from __future__ import annotations
 import base64
@@ -14,7 +14,6 @@ from pathlib import Path
 import re
 import sys
 import time
-from urllib.parse import urlsplit
 from .prompts import LOCATE, EXTRACT
 
 
@@ -23,39 +22,19 @@ class ModelUnavailable(RuntimeError):
 
 
 def configuration():
-    # PyYAML is installed in the dedicated server runtime. Configuration is the
-    # existing DSH profile; do not create another provider or credential copy.
+    # The image service remains a fixed two-stage extraction workflow rather
+    # than an additional agent loop. It shares model settings, not DSH files.
+    project = str(Path(__file__).resolve().parents[1] / 'src')
+    if project not in sys.path:
+        sys.path.insert(0, project)
+    from agent_config import AgentConfig, AgentExecutionError
     try:
-        import yaml
-    except ModuleNotFoundError:
-        # Reuse Ubuntu's packaged PyYAML, as the existing DSH helper does.
-        sys.path.append('/usr/lib/python3/dist-packages')
-        import yaml
-    settings = yaml.safe_load(Path(os.environ.get('DRAWING_SPLIT_SETTINGS', '/var/lib/dsh/.dsh/settings.yaml')).read_text())
-    credentials = yaml.safe_load(Path(os.environ.get('DRAWING_SPLIT_CREDENTIALS', '/var/lib/dsh/.dsh/.credentials.yaml')).read_text())
-    def objects(value):
-        if isinstance(value, dict):
-            yield value
-            for item in value.values():
-                yield from objects(item)
-        elif isinstance(value, list):
-            for item in value:
-                yield from objects(item)
-    providers = [item['openai'] for item in objects(settings) if isinstance(item.get('openai'), dict) and 'baseURL' in item['openai']]
-    defaults = [item['agent-default-model'] for item in objects(settings) if isinstance(item.get('agent-default-model'), dict)]
-    if len(providers) != 1 or len(defaults) != 1:
-        raise ModelUnavailable('Drawing model configuration needs review')
-    endpoint = providers[0].get('baseURL')
-    model = defaults[0].get('model')
-    if model != 'gpt-6-sol':
-        raise ModelUnavailable('Configured model changed; review before dispatch')
-    key = credentials.get('refs', {}).get('OPENAI_CODEX_API_KEY')
-    parsed = urlsplit(endpoint) if isinstance(endpoint, str) else None
-    if not parsed or parsed.scheme not in {'http', 'https'} or not parsed.netloc or parsed.username or parsed.fragment or parsed.query:
-        raise ModelUnavailable('Existing model endpoint is invalid')
-    if not isinstance(key, str) or not key.strip():
-        raise ModelUnavailable('Existing model credential is unavailable')
-    return endpoint, model, key
+        config = AgentConfig.from_env().validate_for_run()
+    except AgentExecutionError:
+        raise ModelUnavailable('Configure the server model endpoint, model and API key before image extraction.') from None
+    if config.model_api != 'responses':
+        raise ModelUnavailable('Two-stage image extraction requires a Responses-compatible endpoint; configure FABFLOW_MODEL_API=responses.')
+    return config.base_url or 'https://api.openai.com/v1', config.model, config.api_key
 
 
 def parse_json(value):
@@ -129,14 +108,14 @@ class ResponsesAdapter:
         from openai import OpenAI, DefaultHttpxClient
         endpoint, model, key=configuration()
         audit=[]
-        proxy=os.environ.get('DRAWING_SPLIT_PROXY', 'http://127.0.0.1:17890') or None
+        proxy=os.environ.get('DRAWING_SPLIT_PROXY') or None
         http=DefaultHttpxClient(proxy=proxy, trust_env=False, timeout=600)
         client=OpenAI(api_key=key,base_url=endpoint,http_client=http,max_retries=0,timeout=600)
         def call(stage, prompt, content, budget):
             started=time.monotonic()
             receipt={'stage':stage,'started_at':datetime.now(timezone.utc).isoformat(),'provider':'openai','model':model}
             try:
-                response=client.responses.create(model=model,max_output_tokens=budget,
+                response=client.responses.create(model=model,max_output_tokens=budget,store=False,
                     input=[{'role':'system','content':prompt},{'role':'user','content':content}])
                 receipt.update(response_id=response.id,status=getattr(response,'status',None),
                     usage=response.usage.model_dump() if response.usage else None,output_text=response.output_text)

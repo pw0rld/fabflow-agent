@@ -1,4 +1,4 @@
-"""Read-only DSH discovery protocol for batches of drawing documents.
+"""Read-only discovery contract for batches of drawing documents.
 
 This is separate from the single-part numeric candidate protocol. Model output
 only proposes document groupings and process routes; it cannot create or verify
@@ -11,7 +11,8 @@ from pathlib import Path
 import re
 import uuid
 
-from dsh_bridge import DshBridge, DshBridgeError, _atomic, _bytes, _id, _json, _progress, _sha
+from dsh_bridge import DshBridgeError, _atomic, _bytes, _id, _json, _progress, _sha
+from agent_bridge import AgentBridge as DshBridge
 
 MANIFEST = '.dsh-order-discovery.json'
 MAX_FILES = 60
@@ -41,8 +42,8 @@ def _text(value, label, maximum, *, optional=False):
 
 
 class DiscoveryBridge(DshBridge):
-    def __init__(self, base_url, workspace_path, timeout=15, *, agent_preset='standard'):
-        super().__init__(base_url, workspace_path, timeout, agent_preset=agent_preset)
+    def __init__(self, base_url, workspace_path, timeout=15, *, agent_preset='standard', backend=None):
+        super().__init__(base_url, workspace_path, timeout, agent_preset=agent_preset, backend=backend)
         self.manifest = self.workspace / MANIFEST
 
     def _run(self, session_id):

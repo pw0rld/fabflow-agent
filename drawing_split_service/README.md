@@ -39,7 +39,7 @@ PYTHONPATH=. python -m unittest discover -s tests -p 'test_drawing_split*.py' -v
 
 ## 模型与运行依赖
 
-复用 DSH 现有 openai / gpt-6-sol 配置及服务器代理；密钥只在服务端读取，不另存到网页或发布包。Python 标准库负责 HTTP/任务管理，Pillow 验证和裁取原始像素，OpenAI SDK/httpx 调用 Responses，PyYAML 读取现有配置。当前复用已有服务端轻量依赖入口，未安装新的 CAD/OCR 工具。
+读取与工作台一致的服务端环境配置：`OPENAI_API_KEY`、可选 `OPENAI_BASE_URL`、必需 `FABFLOW_MODEL`，本服务须使用 `FABFLOW_MODEL_API=responses`。不再查找 DSH 配置或默认选择模型。密钥不发送到网页或发布包。Python 标准库负责 HTTP/任务管理，Pillow 验证和裁取原始像素，OpenAI SDK 调用 Responses。需要代理时显式配置 `DRAWING_SPLIT_PROXY`。
 
 一次任务最多两次模型请求：整页定位区域，然后结合整页与原像素裁片提取参数/折弯表。第二段失败时返回已定位分区及 partial。显式点击重试才创建新 attempt，SDK 关闭自动重试。页面刷新和恢复只 GET。
 

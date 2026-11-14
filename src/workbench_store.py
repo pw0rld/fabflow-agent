@@ -945,7 +945,7 @@ class Workbench:
 
     def start_read(self, task_id, payload):
         only_keys(payload, {'event_id', 'expected_revision'}, 'reading request')
-        require(self.bridge_factory is not None, 'DSH 读图服务尚未配置。')
+        require(self.bridge_factory is not None, 'AI 读图服务尚未配置。')
         def commit(state):
             run = state.get('run')
             require(not run or run['status'] not in {'starting', 'running', 'stopping', 'unknown'}, '读图仍在进行，请等待或先停止。')

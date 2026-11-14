@@ -1,4 +1,4 @@
-"""DSH suggestions from native CAD evidence; never engineering approval."""
+"""Agent suggestions from native CAD evidence; never engineering approval."""
 from __future__ import annotations
 
 import hashlib
@@ -9,7 +9,8 @@ import shutil
 import time
 import uuid
 
-from dsh_bridge import DshBridge, DshBridgeError, _atomic, _json, _sha
+from dsh_bridge import DshBridgeError, _atomic, _json, _sha
+from agent_bridge import AgentBridge as DshBridge, provenance_kind
 
 CLASSIFICATIONS = {'make', 'buy', 'assembly', 'needs_design', 'unclassified'}
 INSTRUCTIONS = '''# CAD 制造零件候选，只读建议
@@ -147,7 +148,7 @@ def _prompt(files):
 
 def suggest(workspace, geometry, rpc_url, *, reader_root=None, on_progress=None,
             timeout_seconds=600, poll_interval=2):
-    """Run one durable, bounded, read-only suggestion session via configured DSH."""
+    """Run one durable, bounded, read-only suggestion with the selected runtime."""
     folder, files = _prepare(workspace, geometry, reader_root)
     bridge = DshBridge(rpc_url, folder, timeout=15)
     manifest, output = folder / 'manufacturing-run.json', folder / 'suggestions.json'
@@ -231,7 +232,7 @@ def suggest(workspace, geometry, rpc_url, *, reader_root=None, on_progress=None,
                              if isinstance(item, dict) and item.get('type') == 'text')
             payload = _payload(text)
             projected = normalize_suggestions(payload, geometry)
-            provenance = {'kind': 'dsh', 'status': 'completed', 'session_id': run['session_id'],
+            provenance = {'kind': provenance_kind(bridge), 'status': 'completed', 'session_id': run['session_id'],
                           'source_sha256': geometry['source_sha256'], 'engineering_status': 'pending_review'}
             with bridge._lock():
                 _atomic(output, {'payload': payload, 'provenance': provenance})

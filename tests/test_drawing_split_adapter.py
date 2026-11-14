@@ -3,10 +3,33 @@ import copy
 import base64
 import io
 import unittest
-from drawing_split_service.model_adapter import parse_json, located_regions, retain_dimension_context, image_input
+from unittest.mock import patch
+from drawing_split_service.model_adapter import configuration, ModelUnavailable, parse_json, located_regions, retain_dimension_context, image_input
 
 
 class ModelContractTests(unittest.TestCase):
+    def test_explicit_server_configuration_replaces_dsh_file_discovery(self):
+        environment={'FABFLOW_MODEL':'synthetic-vision-model', 'OPENAI_API_KEY':'synthetic-key',
+                     'OPENAI_BASE_URL':'https://synthetic-provider.invalid/v1'}
+        with patch.dict('os.environ',environment,clear=True), \
+                patch('pathlib.Path.read_text',side_effect=AssertionError('No DSH config file reads')):
+            self.assertEqual(configuration(),('https://synthetic-provider.invalid/v1','synthetic-vision-model','synthetic-key'))
+
+    def test_missing_model_does_not_select_a_hardcoded_fallback(self):
+        with patch.dict('os.environ',{'OPENAI_API_KEY':'synthetic-key'},clear=True):
+            with self.assertRaises(ModelUnavailable):configuration()
+
+    def test_fixed_image_workflow_requires_responses_and_hides_config_diagnostics(self):
+        environment={'FABFLOW_MODEL':'synthetic-vision-model','OPENAI_API_KEY':'synthetic-key',
+                     'FABFLOW_MODEL_API':'chat_completions'}
+        with patch.dict('os.environ',environment,clear=True):
+            with self.assertRaises(ModelUnavailable):configuration()
+        environment.update(FABFLOW_MODEL_API='responses',OPENAI_BASE_URL='https://synthetic-private.invalid/?credential=synthetic-secret')
+        with patch.dict('os.environ',environment,clear=True):
+            with self.assertRaises(ModelUnavailable) as caught:configuration()
+        self.assertNotIn('synthetic-private',str(caught.exception))
+        self.assertNotIn('synthetic-secret',str(caught.exception))
+
     def test_json_accepts_plain_object_and_fenced_object(self):
         self.assertEqual(parse_json('{"title":"test"}'),{'title':'test'})
         self.assertEqual(parse_json('```json\n{"regions":[]}\n```'),{'regions':[]})

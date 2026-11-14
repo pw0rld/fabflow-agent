@@ -220,7 +220,9 @@ class EngineeringRecognition:
                         sources = self._sources(batch.name, state, folder)
                         if sources:
                             if self.ai_reader is None and self.rpc_url is None:
-                                raise WorkbenchError('工程 AI 模型连接尚未配置。')
+                                from agent_bridge import is_configured
+                                if not is_configured():
+                                    raise WorkbenchError('工程 AI 模型连接尚未配置。')
                             from batch_engineering_ai import recognize
                             last_progress = [0.0]
                             def progress(message):

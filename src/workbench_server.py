@@ -8,6 +8,7 @@ import hashlib
 from decimal import DecimalException
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
+import os
 from pathlib import Path
 import re
 import sys
@@ -690,22 +691,28 @@ def main(argv=None):
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--price-db', type=Path, required=True)
     parser.add_argument('--reader-root', type=Path, required=True)
-    parser.add_argument('--dsh-url', default='http://127.0.0.1:3080')
+    from agent_bridge import AgentBridge, selected_backend
+    parser.add_argument('--agent-backend', choices=('openai-agents', 'dsh'),
+                        default='dsh' if selected_backend() == 'dsh' else 'openai-agents',
+                        help='AI executor; default is the in-process OpenAI Agents SDK')
+    parser.add_argument('--dsh-url', default='http://127.0.0.1:3080',
+                        help='Legacy URL, used only with --agent-backend=dsh')
     parser.add_argument('--port', type=int, default=3092)
     args = parser.parse_args(argv)
     from price_catalog import PriceCatalog
-    from dsh_bridge import DshBridge
+    os.environ['FABFLOW_AGENT_BACKEND'] = selected_backend(args.agent_backend)
+    legacy_url = args.dsh_url if args.agent_backend == 'dsh' else None
     app = Workbench(args.root, catalog=PriceCatalog(args.price_db), reader_root=args.reader_root,
-                    bridge_factory=lambda workspace: DshBridge(args.dsh_url, workspace))
+                    bridge_factory=lambda workspace: AgentBridge(legacy_url, workspace))
     app.resume_reads()
     with make_server(app, args.port) as server:
-        server.batch_quotes.engineering_recognition.configure(app.reader_root / 'batch-engineering', args.dsh_url)
-        server.case_quotes.engineering_recognition.configure(app.reader_root / 'protected-case-engineering', args.dsh_url)
+        for service in (server.batch_quotes, server.case_quotes, server.customer_batches):
+            service.engineering_recognition.configure(app.reader_root / service.root.name / 'engineering', legacy_url)
         from cad_manufacturing_ai import suggest
         server.manufacturing.analyzer = lambda workspace, geometry: suggest(
-            workspace, geometry, args.dsh_url, reader_root=app.reader_root / 'cad-manufacturing')
+            workspace, geometry, legacy_url, reader_root=app.reader_root / 'cad-manufacturing')
         from order_discovery import DiscoveryBridge
-        server.orders.discovery_factory = lambda workspace: DiscoveryBridge(args.dsh_url, workspace)
+        server.orders.discovery_factory = lambda workspace: DiscoveryBridge(legacy_url, workspace)
         server.orders.start()
         server.batch_quotes.start_worker()
         server.case_quotes.start_worker()
@@ -718,6 +725,8 @@ def main(argv=None):
             server.case_quotes.close()
             server.customer_batches.close()
             server.orders.close()
+            from agent_runtime import shutdown_all
+            shutdown_all()
     return 0
 
 

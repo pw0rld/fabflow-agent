@@ -1,4 +1,4 @@
-"""Text-only DSH intent extraction; calculation and adoption belong to callers.
+"""Text-only agent intent extraction; calculation and adoption belong to callers.
 
 Each proposal owns an isolated workspace and a durable one-prompt manifest. No
 attachments, model credentials, manufacturing tools or live prices are needed.
@@ -13,7 +13,8 @@ import re
 import time
 import uuid
 
-from dsh_bridge import DshBridge, DshBridgeError, _atomic, _json, _sha
+from dsh_bridge import DshBridgeError, _atomic, _json, _sha
+from agent_bridge import AgentBridge as DshBridge, is_configured, provenance_kind
 from prep_record import digest
 
 MAX_MESSAGE = 4000
@@ -242,10 +243,10 @@ def _payload(text):
 
 
 def parse_message(base_result, message, *, workspace=None, rpc_url=None, timeout_seconds=180, poll_interval=1):
-    """Use existing DSH credentials; a recovered proposal never resends its prompt."""
+    """Parse once with the configured runtime; recovery never resends a prompt."""
     message = checked_message(message)
-    if not rpc_url:
-        raise DshBridgeError('修改助手尚未连接现有DSH模型服务，请稍后重试。', 'not-configured')
+    if not rpc_url and not is_configured():
+        raise DshBridgeError('修改助手的模型接口尚未配置，请稍后重试。', 'not-configured')
     folder = Path(workspace) if workspace is not None else None
     if folder is None or not folder.is_dir() or any(path.is_symlink() for path in (folder, *folder.parents)):
         raise ValueError('修改助手须使用独立的有效工作目录。')
@@ -335,7 +336,7 @@ def parse_message(base_result, message, *, workspace=None, rpc_url=None, timeout
             except ValueError as error:
                 projected = {'status': 'needs_clarification', 'message': str(error)}
                 payload = {'status': 'needs_clarification', 'message': str(error), 'changes': []}
-            parser = {'kind': 'dsh', 'version': VERSION, 'session_id': run['session_id'],
+            parser = {'kind': provenance_kind(bridge), 'version': VERSION, 'session_id': run['session_id'],
                       'request_digest': identity, 'source_digest': digest(base_result), 'status': 'completed'}
             with bridge._lock():
                 _atomic(output, {'payload': payload, 'parser': parser})

@@ -1,4 +1,4 @@
-"""Source-bound engineering text extraction through the configured DSH model.
+"""Source-bound engineering text extraction through the configured agent model.
 
 Only an isolated, registered reading workspace is accessed. This adapter never
 prices a part or adopts an engineering conclusion; the caller owns the job and
@@ -14,7 +14,8 @@ import re
 import time
 import uuid
 
-from dsh_bridge import DshBridge, DshBridgeError, _atomic, _json, _sha
+from dsh_bridge import DshBridgeError, _atomic, _json, _sha
+from agent_bridge import AgentBridge as DshBridge, provenance_kind
 from reading_inputs import prepare_pdf_views, validate_pdf_views
 
 FIELDS = ('specification', 'thickness_mm', 'material_grade', 'surface_treatment')
@@ -227,7 +228,7 @@ def _payload(text):
 
 
 def recognize(workspace, lines, sources, native, rpc_url, *, on_progress=None, timeout_seconds=600, poll_interval=2):
-    """Run/recover the same bounded DSH session; credentials stay in DSH."""
+    """Run/recover the same bounded session; credentials stay in the runtime."""
     folder, checked, pages, bundle, files = _prepare(workspace, lines, sources, native)
     bridge = DshBridge(rpc_url, folder, timeout=15)
     manifest, output, instructions = folder / 'engineering-ai-run.json', folder / 'engineering-ai-result.json', folder / 'AGENTS.md'
@@ -291,7 +292,7 @@ def recognize(workspace, lines, sources, native, rpc_url, *, on_progress=None, t
             text = '\n'.join(item.get('text', '') for item in message['content'] if isinstance(item, dict) and item.get('type') == 'text')
             payload = _payload(text)
             projected = normalize_result(payload, lines, checked, pages)
-            provenance = {'kind': 'dsh', 'status': 'completed', 'session_id': run['session_id'],
+            provenance = {'kind': provenance_kind(bridge), 'status': 'completed', 'session_id': run['session_id'],
                           'engineering_status': 'pending_review',
                           'sources': [{key: row[key] for key in ('id', 'sha256', 'original_name')} for row in checked]}
             with bridge._lock():
