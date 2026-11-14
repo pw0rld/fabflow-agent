@@ -70,6 +70,8 @@ if (APP_ROOT / 'web/demo/customer/index.html').is_file():
     STATIC['/workbench/customer/'] = ('demo/customer/index.html', 'text/html; charset=utf-8')
 if (APP_ROOT / 'web/demo/customer/part/index.html').is_file():
     STATIC['/workbench/customer/part/'] = ('demo/customer/part/index.html', 'text/html; charset=utf-8')
+if (APP_ROOT / 'web/demo/experience/index.html').is_file():
+    STATIC['/workbench/experience/'] = ('demo/experience/index.html', 'text/html; charset=utf-8')
 CAD_TYPES = {'.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
              '.css': 'text/css; charset=utf-8', '.wasm': 'application/wasm',
              '.json': 'application/json; charset=utf-8', '.txt': 'text/plain; charset=utf-8',
@@ -347,7 +349,7 @@ class WorkbenchHandler(BaseHTTPRequestHandler):
             return self._send(303, b'', extra_headers={'Location': legacy_quotation_login(url.query)})
         if path == '/healthz':
             return self._json({'ok': True, 'version': '1.0.0'})
-        if path in {'/workbench', '/workbench/orders', '/workbench/legacy', '/workbench/recognition', '/workbench/cad', '/workbench/quotation', '/workbench/quotation/part'}:
+        if path in {'/workbench', '/workbench/orders', '/workbench/legacy', '/workbench/recognition', '/workbench/cad', '/workbench/quotation', '/workbench/quotation/part', '/workbench/experience'}:
             self.send_response(308)
             self.send_header('Location', path + '/' + ('?' + url.query if url.query else ''))
             self.send_header('Content-Length', '0')
