@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import copy
+from collections import OrderedDict
 import csv
 import hashlib
 import io
@@ -42,6 +43,7 @@ STAGES = {'queued': '等待原生 CAD 读取', 'geometry': '正在读取真实�
           'failed': '本轮处理未完成', 'not_started': '尚未开始制造件识别'}
 MAX_SOLIDS = 200
 MAX_GEOMETRY_BYTES = 96 * 1024 * 1024
+PREVIEW_INDEX_CACHE_SIZE = 16
 NATIVE_DIAGNOSTIC_CHARS = 8192
 
 
@@ -323,6 +325,9 @@ class CadManufacturingService:
         self.native_python = native_python or os.environ.get('HYL_CAD_PYTHON') or sys.executable
         self.analyzer = analyzer
         self.native_runner = native_runner or self._extract
+        # Keep only source-bound scalar lookup facts here, never display meshes.
+        self._preview_indexes = OrderedDict()
+        self._preview_index_lock = threading.Lock()
         self._recover()
 
     def _folder(self, document_id, create=False):
@@ -749,14 +754,21 @@ class CadManufacturingService:
             with self._active_lock:
                 self._active.discard(self._key(document_id))
 
-    def _artifact(self, document_id, filename):
+    def _artifact(self, document_id, filename, *, expected_geometry=None):
         with self.cad._lock(document_id):
             document = self.cad._read(document_id)
             self.cad._original(document)
             state = self._read(document_id, document['sha256'])
+            if expected_geometry is not None:
+                info = state.get('geometry') or {}
+                require(isinstance(expected_geometry, dict) and
+                        set(expected_geometry) == {'run_id', 'geometry_sha256'} and
+                        info.get('run_id') == expected_geometry['run_id'] and
+                        info.get('files', {}).get('geometry.json') == expected_geometry['geometry_sha256'],
+                        '原生几何已更新，请重新载入零件预览。')
             return self._artifact_for_state(state, filename)
 
-    def _artifact_for_state(self, state, filename):
+    def _artifact_path_for_state(self, state, filename):
         info = state.get('geometry')
         require(info is not None, '尚无原生几何结果。')
         require(filename in info['files'] and Path(filename).name == filename,
@@ -767,20 +779,87 @@ class CadManufacturingService:
         path = folder / filename
         require(path.is_file() and not path.is_symlink() and path.stat().st_size <= MAX_GEOMETRY_BYTES,
                 '几何文件无效或过大。')
+        return path
+
+    def _artifact_for_state(self, state, filename):
+        path = self._artifact_path_for_state(state, filename)
         data = path.read_bytes()
-        require(hashlib.sha256(data).hexdigest() == info['files'][filename], '几何文件校验失败。')
+        require(hashlib.sha256(data).hexdigest() == state['geometry']['files'][filename], '几何文件校验失败。')
         return data
 
-    def geometry(self, document_id):
-        data = json.loads(self._artifact(document_id, 'geometry.json'))
-        return validate_geometry(data, self.cad.get(document_id)['sha256'])
+    @staticmethod
+    def _preview_index_key(state):
+        info = state['geometry']
+        return (state['document_id'], state['source_sha256'], info['run_id'], info['files']['geometry.json'])
 
-    def file(self, document_id, filename):
+    def _remember_preview_index(self, state, geometry):
+        """Called only for fully validated geometry while holding the CAD lock."""
+        index = {'source_sha256': geometry['source_sha256'], 'output_unit': geometry['output_unit'],
+                 'preview_binding': {'run_id': state['geometry']['run_id'],
+                                     'geometry_sha256': state['geometry']['files']['geometry.json']},
+                 'solids': [{key: copy.deepcopy(solid[key]) for key in
+                             ('id', 'name', 'definition_id', 'occurrence_path', 'volume_mm3', 'bounds_mm', 'thumbnail')
+                             if key in solid} for solid in geometry['solids']]}
+        key = self._preview_index_key(state)
+        with self._preview_index_lock:
+            self._preview_indexes[key] = index
+            self._preview_indexes.move_to_end(key)
+            while len(self._preview_indexes) > PREVIEW_INDEX_CACHE_SIZE:
+                self._preview_indexes.popitem(last=False)
+        return index
+
+    def preview_index(self, document_id):
+        """Read a verified small lookup index without reparsing meshes per image.
+
+        The existing per-document lock also makes concurrent cold lookups share
+        one parse. Every hit still hashes the registered geometry from disk in
+        bounded chunks; a changed artifact cannot reuse a previously valid index.
+        """
+        with self.cad._lock(document_id):
+            document = self.cad._read(document_id)
+            self.cad._original(document)
+            state = self._read(document_id, document['sha256'])
+            require(state['document_id'] == document_id, '制造件记录与文件编号不一致。')
+            path = self._artifact_path_for_state(state, 'geometry.json')
+            key = self._preview_index_key(state)
+            with self._preview_index_lock:
+                index = self._preview_indexes.get(key)
+                if index is not None:
+                    self._preview_indexes.move_to_end(key)
+            if index is None:
+                data = self._artifact_for_state(state, 'geometry.json')
+                geometry = validate_geometry(json.loads(data), document['sha256'])
+                index = self._remember_preview_index(state, geometry)
+            else:
+                digest, length = hashlib.sha256(), 0
+                with path.open('rb') as stream:
+                    while True:
+                        chunk = stream.read(1024 * 1024)
+                        if not chunk:
+                            break
+                        length += len(chunk)
+                        require(length <= MAX_GEOMETRY_BYTES, '几何文件无效或过大。')
+                        digest.update(chunk)
+                require(digest.hexdigest() == key[-1], '几何文件校验失败。')
+            # Callers may adapt their local projection without corrupting hits.
+            return copy.deepcopy(index)
+
+    def geometry(self, document_id):
+        with self.cad._lock(document_id):
+            document = self.cad._read(document_id)
+            self.cad._original(document)
+            state = self._read(document_id, document['sha256'])
+            geometry = validate_geometry(json.loads(self._artifact_for_state(state, 'geometry.json')),
+                                         document['sha256'])
+            self._remember_preview_index(state, geometry)
+            return geometry
+
+    def file(self, document_id, filename, *, expected_geometry=None):
         require(bool(re.fullmatch(r'[A-Za-z0-9_.-]+\.(png|step|dxf)', filename)),
                 '仅支持已登记的几何图片、STEP 或 DXF。')
         mime = ('image/png' if filename.endswith('.png') else
                 'application/dxf' if filename.endswith('.dxf') else 'application/octet-stream')
-        return self._artifact(document_id, filename), mime
+        return self._artifact(document_id, filename, expected_geometry=expected_geometry), mime
 
     def review(self, document_id, payload):
         only_keys(payload, {'expected_revision', 'groups', 'bom_settings'}, 'manufacturing review')

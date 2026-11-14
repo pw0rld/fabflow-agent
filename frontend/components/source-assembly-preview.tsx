@@ -12,22 +12,32 @@ type Geometry = { source_sha256: string; output_unit: 'mm'; solids: Solid[] }
 type SourceAssembly = { url: string; geometry: Geometry; upAxis: 'y' | 'z' }
 type Viewer = { dispose(): void; reset(): void; select(id: string | null): void }
 
+class AssemblyPreviewError extends Error {}
+
+function responseMessage(status: number): string {
+  if (status === 401) return '当前访问凭据已失效，请刷新询价页面后重新载入原图。'
+  if (status === 403) return '当前浏览器无法访问这笔询价的原图，请从自己的询价页面打开。'
+  if (status === 404) return '原图预览资料暂不可用，可继续查看已保存的零件和报价。'
+  if (status === 429 || status === 503) return '原图服务正忙，请稍后重新载入。已保存的拆件和报价会保留。'
+  return '原图服务暂不可用，请稍后重新载入。已保存的拆件和报价会保留。'
+}
+
 function assemblyPayload(value: unknown, url: string): SourceAssembly {
   const match = SOURCE_PART.exec(url)
-  if (!match || !value || typeof value !== 'object') throw new Error('原图资料暂不可用。')
+  if (!match || !value || typeof value !== 'object') throw new AssemblyPreviewError('原图资料暂不可用。')
   const data = value as { batch_id?: unknown; run_id?: unknown; line_id?: unknown; source_sha256?: unknown; geometry?: unknown; up_axis?: unknown }
   if (data.batch_id !== match[1] || data.run_id !== match[2] || data.line_id !== match[3]
-      || typeof data.source_sha256 !== 'string' || !SHA.test(data.source_sha256)) throw new Error('原图来源与当前订单不一致，请刷新订单。')
+      || typeof data.source_sha256 !== 'string' || !SHA.test(data.source_sha256)) throw new AssemblyPreviewError('原图来源与当前订单不一致，请刷新订单。')
   const geometry = data.geometry as Geometry | undefined
   if (!geometry || geometry.source_sha256 !== data.source_sha256 || geometry.output_unit !== 'mm'
-      || !Array.isArray(geometry.solids) || !geometry.solids.length || geometry.solids.length > 10000) throw new Error('当前来源尚无可显示的完整原图。')
+      || !Array.isArray(geometry.solids) || !geometry.solids.length || geometry.solids.length > 10000) throw new AssemblyPreviewError('当前来源尚无可显示的完整原图。')
   const ids = new Set<string>()
   for (const solid of geometry.solids) {
     if (!solid || typeof solid.id !== 'string' || !solid.id || ids.has(solid.id)
-        || !Array.isArray(solid.mesh?.positions) || !Array.isArray(solid.mesh?.indices)) throw new Error('原图的实体显示数据不完整。')
+        || !Array.isArray(solid.mesh?.positions) || !Array.isArray(solid.mesh?.indices)) throw new AssemblyPreviewError('原图的实体显示数据不完整。')
     ids.add(solid.id)
   }
-  if (data.up_axis != null && data.up_axis !== 'y' && data.up_axis !== 'z') throw new Error('原图坐标信息暂不可用。')
+  if (data.up_axis != null && data.up_axis !== 'y' && data.up_axis !== 'z') throw new AssemblyPreviewError('原图坐标信息暂不可用。')
   return { url, geometry, upAxis: data.up_axis === 'y' ? 'y' : 'z' }
 }
 
@@ -46,14 +56,23 @@ export default function SourceAssemblyPreview({ previewUrl, sourceName, active =
     setData(null); setError(''); setReady(false); setLoading(open && !!url)
     if (!open || !url) return () => abort.abort()
     void (async () => {
+      let stage: 'request' | 'download' | 'validation' = 'request'
       try {
         // This existing owner/staff-bound endpoint contains the complete one-file
         // source geometry. Do not reuse another line/file or cache across owners.
         const response = await fetch(url, { signal: abort.signal, credentials: 'same-origin', cache: 'no-store', redirect: 'error', headers: { 'X-Workbench-Request': '1' } })
-        if (!response.ok) throw new Error('原图暂未载入，请刷新订单或重试。')
-        const source = assemblyPayload(await response.json(), url)
+        if (!response.ok) throw new AssemblyPreviewError(responseMessage(response.status))
+        stage = 'download'
+        const payload: unknown = await response.json()
+        stage = 'validation'
+        const source = assemblyPayload(payload, url)
         if (!abort.signal.aborted) setData(source)
-      } catch (failure) { if (!abort.signal.aborted) setError(failure instanceof Error ? failure.message : '原图暂未载入。') }
+      } catch (failure) {
+        if (!abort.signal.aborted) setError(failure instanceof AssemblyPreviewError ? failure.message
+          : stage === 'request' ? '原图连接未完成，请检查网络后重新载入。已保存的拆件和报价会保留。'
+          : stage === 'download' ? '原图数据未完整接收，请重新载入。已保存的拆件和报价会保留。'
+          : '原图数据无法校验，请刷新询价页面后重试。')
+      }
       finally { if (!abort.signal.aborted) setLoading(false) }
     })()
     return () => abort.abort()
@@ -79,10 +98,12 @@ export default function SourceAssemblyPreview({ previewUrl, sourceName, active =
       if (viewer.current === instance) viewer.current = null
     }
     void (async () => {
+      let rendering = false
       try {
         const moduleUrl = '/workbench/cad-preview/step.js'
         const module = await import(/* webpackIgnore: true */ moduleUrl)
         if (abort.signal.aborted || !host.current) return
+        rendering = true
         const groups = current.geometry.solids.map((solid, index) => ({ id: `source-entity-${index}`, name: solid.name || solid.id, solid_ids: [solid.id] }))
         instance = await module.mountGeometry({ element: host.current, geometry: current.geometry, groups, upAxis: current.upAxis,
           componentColors: true, signal: abort.signal,
@@ -93,8 +114,10 @@ export default function SourceAssemblyPreview({ previewUrl, sourceName, active =
         canvas = host.current?.querySelector('canvas') || null
         canvas?.addEventListener('webglcontextlost', contextLost)
         instance?.select(null); viewer.current = instance; setReady(true)
-      } catch (failure) {
-        if (!abort.signal.aborted) setError(failure instanceof Error ? failure.message : '原图暂未显示，请重试。')
+      } catch {
+        if (!abort.signal.aborted) setError(rendering
+          ? '原图已读取，但三维显示未完成，请重新载入。'
+          : '三维查看器未能载入，请检查网络后重新载入。')
       }
     })()
     return () => { abort.abort(); canvas?.removeEventListener('webglcontextlost', contextLost); instance?.dispose(); if (viewer.current === instance) viewer.current = null }

@@ -12,6 +12,7 @@ import os
 from pathlib import Path
 import re
 import sys
+import threading
 from urllib.parse import parse_qs, unquote, urlsplit, quote
 
 from prep_record import RecordError, identifier, only_keys, require
@@ -122,6 +123,32 @@ class WorkbenchHandler(BaseHTTPRequestHandler):
     def _json(self, value, status=200):
         self._send(status, json.dumps(value, ensure_ascii=False, allow_nan=False).encode())
 
+    def _geometry_response(self, operation):
+        # Native previews can expand compact mesh files into several large
+        # Python/JSON objects. Admit one such request for this entire server,
+        # including its response write; ordinary status/upload requests bypass
+        # this gate. Reject instead of accumulating waiting request threads.
+        gate = self.server.geometry_request_gate
+        if not gate.acquire(blocking=False):
+            content = json.dumps({'error': {'code': 'geometry_busy',
+                'message': '模型预览正在读取，请稍后手动重试。已保存的资料会保留。'}},
+                ensure_ascii=False).encode()
+            return self._send(503, content, extra_headers={'Retry-After': '2'})
+        try:
+            return operation()
+        finally:
+            gate.release()
+
+    def _geometry_json(self, producer):
+        return self._geometry_response(lambda: self._json(producer()))
+
+    def _geometry_file(self, producer, *, attachment=False, ascii_filename=False):
+        def send():
+            content, mime, filename = producer()
+            return self._send(200, content, mime, filename=filename, attachment=attachment,
+                              filename_fallback=filename if ascii_filename else None)
+        return self._geometry_response(send)
+
     def _body(self, limit=MAX_JSON):
         raw_length = self.headers.get('Content-Length')
         if not raw_length or not raw_length.isdigit() or self.headers.get('Transfer-Encoding'):
@@ -173,7 +200,7 @@ class WorkbenchHandler(BaseHTTPRequestHandler):
         if len(parts) == 5 and parts[2] == 'runs' and parts[4] == 'engineering-pricing':
             return self._json(service.engineering_pricing(parts[1], parts[3]))
         if len(parts) == 5 and parts[2] == 'runs' and parts[4] == 'process-pricing':
-            return self._json(service.process_pricing.get(parts[1], parts[3]))
+            return self._geometry_json(lambda: service.process_pricing.get(parts[1], parts[3]))
         if len(parts) == 5 and parts[2] == 'runs' and parts[4] == 'cost-sheet':
             return self._json(service.cost_sheet.get(parts[1], parts[3]))
         if len(parts) == 7 and parts[2] == 'runs' and parts[4:6] == ['assistant', 'proposals']:
@@ -184,21 +211,23 @@ class WorkbenchHandler(BaseHTTPRequestHandler):
                               attachment=not (mime.startswith('image/') or mime == 'application/pdf'))
         if len(parts) >= 5 and parts[2] == 'runs' and parts[4] == 'customer-parts':
             if len(parts) == 6:
-                return self._json(service.customer_part_geometry(parts[1], parts[3], parts[5]))
+                return self._geometry_json(lambda: service.customer_part_geometry(parts[1], parts[3], parts[5]))
             if len(parts) == 7 and parts[6] == 'thumbnail':
                 content, mime, filename = service.part_thumbnail(parts[1], parts[3], parts[5])
                 return self._send(200, content, mime, filename=filename)
             raise FileNotFoundError()
         if len(parts) >= 5 and parts[2] == 'runs' and parts[4] == 'parts':
             if len(parts) == 5:
-                return self._json(service.parts_manifest(parts[1], parts[3]))
+                return self._geometry_json(lambda: service.parts_manifest(parts[1], parts[3]))
             if len(parts) == 6:
-                return self._json(service.part_geometry(parts[1], parts[3], parts[5]))
+                return self._geometry_json(lambda: service.part_geometry(parts[1], parts[3], parts[5]))
             if len(parts) == 7 and parts[6] == 'thumbnail':
                 content, mime, filename = service.part_thumbnail(parts[1], parts[3], parts[5])
                 return self._send(200, content, mime, filename=filename)
             raise FileNotFoundError()
         if len(parts) == 5 and parts[2] == 'runs':
+            if parts[4] in {'customer-quote.html', 'customer-print.html', 'quote.html', 'quote-print.html'}:
+                return self._geometry_file(lambda: service.artifact(parts[1], parts[3], parts[4]))
             content, mime, filename = service.artifact(parts[1], parts[3], parts[4])
             return self._send(200, content, mime, filename=filename,
                               attachment=parts[4] not in {'quote.html', 'quote-print.html', 'preview-summary.html',
@@ -271,25 +300,35 @@ class WorkbenchHandler(BaseHTTPRequestHandler):
         if post and len(parts) == 3 and parts[2] in {'start', 'retry'}:
             return self._json(getattr(portal, parts[2])(owner, parts[1], self._json_body()), 202)
         if not post and len(parts) == 5 and parts[2] == 'runs' and parts[4] == 'manufacturing':
-            return self._json(portal.manufacturing(owner, parts[1], parts[3]))
+            portal._owned(owner, parts[1])
+            return self._geometry_json(lambda: portal.manufacturing(owner, parts[1], parts[3]))
         if len(parts) == 5 and parts[2] == 'runs' and parts[4] == 'process-pricing':
-            return self._json(portal.process_pricing(owner, parts[1], parts[3], self._json_body() if post else None),
-                              201 if post else 200)
+            if not post:
+                portal._owned(owner, parts[1])
+                return self._geometry_json(lambda: portal.process_pricing(owner, parts[1], parts[3], None))
+            return self._json(portal.process_pricing(owner, parts[1], parts[3], self._json_body()), 201)
         if not post and len(parts) == 7 and parts[2] == 'runs' and parts[4] == 'manufacturing':
-            content, mime, filename = portal.manufacturing_drawing(owner, parts[1], parts[3], parts[5], parts[6])
-            return self._send(200, content, mime, filename=filename, attachment=parts[6].endswith('.dxf'))
+            portal._owned(owner, parts[1])
+            return self._geometry_file(
+                lambda: portal.manufacturing_drawing(owner, parts[1], parts[3], parts[5], parts[6]),
+                attachment=parts[6].endswith('.dxf'))
         if not post and len(parts) == 5 and parts[2] == 'runs':
+            if parts[4] in {'customer-quote.html', 'customer-print.html'}:
+                portal._owned(owner, parts[1])
+                return self._geometry_file(lambda: portal.artifact(owner, parts[1], parts[3], parts[4]))
             content, mime, filename = portal.artifact(owner, parts[1], parts[3], parts[4])
             return self._send(200, content, mime, filename=filename)
         if not post and len(parts) >= 6 and parts[2] == 'runs' and parts[4] == 'customer-parts':
             if len(parts) == 6:
-                return self._json(portal.customer_part_geometry(owner, parts[1], parts[3], parts[5]))
+                portal._owned(owner, parts[1])
+                return self._geometry_json(lambda: portal.customer_part_geometry(owner, parts[1], parts[3], parts[5]))
             if len(parts) == 7 and parts[6] == 'thumbnail':
                 content, mime, filename = portal.part_thumbnail(owner, parts[1], parts[3], parts[5])
                 return self._send(200, content, mime, filename=filename)
             if len(parts) == 7 and parts[6] == 'step':
-                content, mime, filename = portal.part_step(owner, parts[1], parts[3], parts[5])
-                return self._send(200, content, mime, filename=filename, attachment=True, filename_fallback=filename)
+                portal._owned(owner, parts[1])
+                return self._geometry_file(lambda: portal.part_step(owner, parts[1], parts[3], parts[5]),
+                                           attachment=True, ascii_filename=True)
         raise FileNotFoundError()
 
     def _customer_admin(self, url, *, post=False):
@@ -301,17 +340,18 @@ class WorkbenchHandler(BaseHTTPRequestHandler):
         service = self.server.customer_batches
         if not post:
             if len(parts) == 5 and parts[2] == 'runs' and parts[4] in {'customer-quote.html', 'customer-print.html'}:
-                content, mime, filename = self.server.customer_upload.staff_artifact(parts[1], parts[3], parts[4])
-                return self._send(200, content, mime, filename=filename)
+                return self._geometry_file(
+                    lambda: self.server.customer_upload.staff_artifact(parts[1], parts[3], parts[4]))
             if len(parts) == 7 and parts[2] == 'runs' and parts[4] == 'customer-parts' and parts[6] == 'step':
-                content, mime, filename = self.server.customer_upload.staff_part_step(parts[1], parts[3], parts[5])
-                return self._send(200, content, mime, filename=filename, attachment=True, filename_fallback=filename)
+                return self._geometry_file(
+                    lambda: self.server.customer_upload.staff_part_step(parts[1], parts[3], parts[5]),
+                    attachment=True, ascii_filename=True)
             if len(parts) == 5 and parts[2] == 'runs' and parts[4] == 'manufacturing':
-                return self._json(self.server.customer_upload.staff_manufacturing(parts[1], parts[3]))
+                return self._geometry_json(lambda: self.server.customer_upload.staff_manufacturing(parts[1], parts[3]))
             if len(parts) == 7 and parts[2] == 'runs' and parts[4] == 'manufacturing':
-                content, mime, filename = self.server.customer_upload.staff_manufacturing_drawing(
-                    parts[1], parts[3], parts[5], parts[6])
-                return self._send(200, content, mime, filename=filename, attachment=parts[6].endswith('.dxf'))
+                return self._geometry_file(
+                    lambda: self.server.customer_upload.staff_manufacturing_drawing(parts[1], parts[3], parts[5], parts[6]),
+                    attachment=parts[6].endswith('.dxf'))
             return self._quote_get(service, parts)
         if len(parts) == 3 and parts[2] in {'start', 'retry'}:
             return self._json(getattr(service, parts[2])(parts[1], self._json_body()), 202)
@@ -426,11 +466,14 @@ class WorkbenchHandler(BaseHTTPRequestHandler):
                 if len(parts) == 4:
                     return self._json(service.get(parts[2]))
                 if len(parts) == 5 and parts[4] == 'geometry':
-                    return self._json(service.geometry(parts[2]))
+                    return self._geometry_json(lambda: service.geometry(parts[2]))
                 if len(parts) == 5 and parts[4] == 'bom.csv':
-                    return self._send(200, service.bom(parts[2]), 'text/csv; charset=utf-8',
-                                      filename=parts[2] + '-manufacturing-draft.csv', attachment=True)
+                    return self._geometry_file(lambda: (service.bom(parts[2]), 'text/csv; charset=utf-8',
+                                              parts[2] + '-manufacturing-draft.csv'), attachment=True)
                 if len(parts) == 6 and parts[4] == 'files':
+                    if not parts[5].endswith('.png'):
+                        return self._geometry_file(lambda: (*service.file(parts[2], parts[5]), parts[5]),
+                                                   attachment=True)
                     content, mime = service.file(parts[2], parts[5])
                     return self._send(200, content, mime, filename=parts[5], attachment=mime != 'image/png')
                 raise FileNotFoundError()
@@ -669,6 +712,7 @@ class WorkbenchHandler(BaseHTTPRequestHandler):
 
 def make_server(app, port=3092):
     server = ThreadingHTTPServer(('127.0.0.1', port), WorkbenchHandler)
+    server.geometry_request_gate = threading.BoundedSemaphore(1)
     server.app = app
     server.cad = CadDocumentStore(app.meta / 'cad-documents')
     server.manufacturing = CadManufacturingService(server.cad)

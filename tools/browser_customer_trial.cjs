@@ -91,6 +91,7 @@ async function mockedContext(browser, viewport, options = {}) {
   const quotaGate = new Promise(resolve => { releaseQuota = resolve; });
   const state = { created: !!options.completed, started: false, uploadEvents: [], startEvents: [], detailReads: 0,
     geometryReads: 0, artifactReads: 0, quotaReads: 0, quotaSuccesses: 0,
+    geometryFailures: [...(options.geometryFailures || [])],
     quotaAvailable: !options.unavailableQuota, quotaReleased: !options.holdQuota,
     releaseQuota() { state.quotaReleased = true; releaseQuota(); }, unknown: [] };
   contextStates.set(context, state);
@@ -141,7 +142,15 @@ async function mockedContext(browser, viewport, options = {}) {
         body = { batch_id: BATCH, run_id: RUN, status: 'pending_review', parts,
           summary: { parts_count: 2, quantity_total: 20, estimated_parts: 2, blocked_parts: 0 } };
       } else if (options.completed && method === 'GET' && new RegExp(`^/orders/${BATCH}/runs/${RUN}/customer-parts/L000[12]$`).test(suffix)) {
-        state.geometryReads += 1; body = partPayload(suffix.split('/').pop());
+        state.geometryReads += 1;
+        const failure = state.geometryFailures.shift();
+        if (failure === 'network') return route.abort('failed');
+        if (failure === 'json') return route.fulfill({ status: 200, contentType: 'application/json',
+          body: '{"private":"synthetic-preview-body"' });
+        if (typeof failure === 'number') return route.fulfill({ status: failure, contentType: 'application/json',
+          body: '{"error":"synthetic-preview-body"}' });
+        body = partPayload(suffix.split('/').pop());
+        if (failure === 'source') body = { ...body, source_sha256: 'e'.repeat(64) };
       } else if (options.completed && method === 'GET' && new RegExp(`^/orders/${BATCH}/runs/${RUN}/customer-parts/L000[12]/thumbnail$`).test(suffix)) {
         return route.fulfill({ status: 200, contentType: 'image/svg+xml', body: thumbnail });
       } else if (options.completed && method === 'GET' && (suffix === `/orders/${BATCH}/runs/${RUN}/customer-quote.html` || suffix === `/orders/${BATCH}/runs/${RUN}/customer-print.html`)) {
@@ -397,6 +406,41 @@ async function main() {
     await completedPage.screenshot({ path: path.join(output, 'desktop-quote.png'), fullPage: true });
     await completed.context.close();
     report.checks.push('Completed customer quote displays the saved order total, bound quote/print URLs and inline customer document without internal costs or new paid work.');
+
+    const failureCases = [
+      ['network', '原图连接未完成'], ['json', '原图数据未完整接收'],
+      [401, '当前访问凭据已失效'], [403, '当前浏览器无法访问'],
+      [404, '原图预览资料暂不可用'], [429, '原图服务正忙'], [503, '原图服务正忙'],
+      ['source', '当前来源尚无可显示的完整原图'],
+    ];
+    const interrupted = await mockedContext(browser, { width: 1440, height: 1100 },
+      { completed: true, geometryFailures: failureCases.map(([failure]) => failure) });
+    await interrupted.context.addInitScript(id => localStorage.setItem('fabflow-trial-last-order', id), BATCH);
+    const interruptedPage = await interrupted.context.newPage();
+    interruptedPage.on('pageerror', error => report.page_errors.push(error.message));
+    await interruptedPage.goto(target, { waitUntil: 'networkidle' });
+    for (const [index, [, expected]] of failureCases.entries()) {
+      await until(() => interrupted.state.geometryReads === index + 1, 'Manual preview recovery did not make exactly one geometry request.');
+      await interruptedPage.waitForFunction(message => document.querySelector('[data-testid="customer-original-error"]')?.textContent?.includes(message), expected);
+      const message = await interruptedPage.getByTestId('customer-original-error').innerText();
+      for (const privateText of ['Failed to fetch', 'SyntaxError', 'synthetic-preview-body', runPrefix])
+        assert(!message.includes(privateText), 'Preview error exposed raw diagnostics or response content.');
+      assert.equal(await interruptedPage.getByTestId('customer-original-solid-count').count(), 0);
+      await interruptedPage.waitForTimeout(300);
+      assert.equal(interrupted.state.geometryReads, index + 1, 'A failed large geometry request must not retry automatically.');
+      if (index === 0) await interruptedPage.screenshot({ path: path.join(output, 'desktop-preview-network-error.png'), fullPage: true });
+      await interruptedPage.getByTestId('customer-original-retry').click();
+    }
+    await interruptedPage.waitForFunction(() => document.querySelector('[data-testid="customer-original-assembly"]')?.getAttribute('data-state') === 'ready', null, { timeout: 45000 });
+    assert.equal(interrupted.state.geometryReads, failureCases.length + 1);
+    assert.equal(await interruptedPage.getByTestId('customer-original-canvas').getAttribute('data-visible-solid-count'), '2');
+    assert.equal(await interruptedPage.getByTestId('customer-original-canvas').locator('canvas').count(), 1);
+    assert.equal(interrupted.state.uploadEvents.length, 0);
+    assert.equal(interrupted.state.startEvents.length, 0);
+    assert.equal(interrupted.state.unknown.length, 0, interrupted.state.unknown.join(', '));
+    await interruptedPage.screenshot({ path: path.join(output, 'desktop-preview-recovered.png'), fullPage: true });
+    await interrupted.context.close();
+    report.checks.push('Network failure, incomplete JSON, denied/missing/busy responses and a mismatched source show safe Chinese errors; only manual retries request geometry and recover the complete native model without uploads or paid work.');
 
     const partial = await mockedContext(browser, { width: 1440, height: 1024 }, { completed: true, partial: true });
     await partial.context.addInitScript(id => localStorage.setItem('fabflow-trial-last-order', id), BATCH);

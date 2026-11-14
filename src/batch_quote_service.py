@@ -657,7 +657,7 @@ class BatchQuoteService:
             self._commit_engineering_pricing(state, path, record)
             return {'batch': self._public(state), 'run_id': new_id, 'source_run_id': run_id, 'replayed': False}
 
-    def _preview_file(self, batch_id, state, result, file_id):
+    def _preview_file(self, batch_id, state, result, file_id, *, preview_index=False):
         demand(isinstance(file_id, str) and FILE_ID.fullmatch(file_id), '报价物料没有有效源文件。')
         originals = [row for row in state['files'] if row['id'] == file_id]
         sources = [row for row in result['source_files'] if row.get('id') == file_id]
@@ -685,7 +685,13 @@ class BatchQuoteService:
                and native_id == expected_id, '原生文件关联编号不一致。')
         document = self.cad.get(native_id)
         demand(document.get('id') == native_id and document.get('sha256') == sha, '原生文件身份不一致。')
-        geometry = validate_geometry(self.manufacturing.geometry(native_id), sha)
+        index_reader = getattr(self.manufacturing, 'preview_index', None)
+        if preview_index and callable(index_reader):
+            geometry = index_reader(native_id)
+            demand(geometry.get('source_sha256') == sha and geometry.get('output_unit') == 'mm',
+                   '原生预览索引与上传原件不一致。')
+        else:
+            geometry = validate_geometry(self.manufacturing.geometry(native_id), sha)
         return {'native_id': native_id, 'source_sha256': sha, 'geometry': geometry}
 
     @staticmethod
@@ -718,7 +724,7 @@ class BatchQuoteService:
                 'representative_solid_ids': [solid['id'] for solid in representative], 'bounds_mm': bounds,
                 'thumbnail': representative[0].get('thumbnail')}
 
-    def _preview_context(self, batch_id, run_id, line_id):
+    def _preview_context(self, batch_id, run_id, line_id, *, preview_index=False):
         state, result = self._preview_run(batch_id, run_id)
         selected = next((item for item in result['lines'] if item['id'] == line_id), None)
         demand(selected is not None, '报价物料不存在。', 'not_found', 404)
@@ -732,7 +738,8 @@ class BatchQuoteService:
                 continue
             if file_id not in files:
                 try:
-                    files[file_id] = self._preview_file(batch_id, state, result, file_id)
+                    files[file_id] = (self._preview_file(batch_id, state, result, file_id, preview_index=True)
+                                      if preview_index else self._preview_file(batch_id, state, result, file_id))
                 except (ValueError, OSError, TypeError, KeyError):
                     files[file_id] = None
             context = files.get(file_id)
@@ -749,7 +756,9 @@ class BatchQuoteService:
     def _preview_thumbnail(self, context, match):
         filename = match.get('thumbnail')
         demand(filename == match['representative_solid_id'] + '.png', '该零件没有已登记的原生缩略图。', 'not_found', 404)
-        content, mime = self.manufacturing.file(context['native_id'], filename)
+        binding = context['geometry'].get('preview_binding')
+        content, mime = (self.manufacturing.file(context['native_id'], filename, expected_geometry=binding)
+                         if binding is not None else self.manufacturing.file(context['native_id'], filename))
         demand(mime == 'image/png' and isinstance(content, bytes) and content.startswith(b'\x89PNG\r\n\x1a\n'),
                '原生缩略图不可用。', 'not_found', 404)
         return content, mime
@@ -835,7 +844,7 @@ class BatchQuoteService:
 
     def part_thumbnail(self, batch_id, run_id, line_id):
         demand(isinstance(line_id, str) and LINE_ID.fullmatch(line_id), '报价物料编号无效。')
-        result, files, matches = self._preview_context(batch_id, run_id, line_id)
+        result, files, matches = self._preview_context(batch_id, run_id, line_id, preview_index=True)
         line = next((item for item in result['lines'] if item['id'] == line_id), None)
         demand(line is not None and matches[line_id] is not None, '报价物料缩略图不可用。', 'not_found', 404)
         try:
