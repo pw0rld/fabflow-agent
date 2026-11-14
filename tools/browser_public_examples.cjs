@@ -21,7 +21,7 @@ let baseline;
 async function contextFor(browser, viewport, options = {}) {
   const context = await browser.newContext({ viewport, ignoreHTTPSErrors: true,
     reducedMotion: 'reduce', serviceWorkers: 'block', acceptDownloads: true });
-  context.setDefaultTimeout(30000);
+  context.setDefaultTimeout(60000);
   await context.addInitScript(() => {
     localStorage.setItem('fabflow-trial-last-order', 'BATCH-' + 'a'.repeat(32));
     localStorage.setItem('public-example-private-canary', 'PRIVATE-CUSTOMER-CANARY-ybm-fhz-20-00.stp');
@@ -33,7 +33,7 @@ async function contextFor(browser, viewport, options = {}) {
     if (['data:', 'blob:', 'about:'].includes(url.protocol)) return route.continue();
     if (url.pathname.startsWith('/workbench/customer/api')) report.customer_api_requests++;
     if (url.origin !== origin.origin || !['GET', 'HEAD'].includes(request.method()) ||
-        !(['/try/', '/favicon.ico'].includes(url.pathname) ||
+        !(['/try/', '/favicon.ico', '/workbench/willflow-mark.svg'].includes(url.pathname) ||
           ['/workbench/_next/', '/workbench/cad-preview/', ROOT].some(prefix => url.pathname.startsWith(prefix)))) {
       report.blocked_requests.push(request.method() + ' ' + url.pathname); return route.abort();
     }
@@ -66,11 +66,18 @@ async function fits(page) { assert(await page.evaluate(() => document.documentEl
 async function main() {
   const browser = await chromium.launch({ headless: true, chromiumSandbox: false,
     args: ['--disable-dev-shm-usage', '--renderer-process-limit=1', '--no-first-run', '--no-proxy-server',
-      '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+      '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader',
+      // The isolated loopback proxy uses a short-lived self-signed certificate.
+      // Chromium downloads do not inherit the context's ignoreHTTPSErrors.
+      ...(origin.hostname === '127.0.0.1' ? ['--ignore-certificate-errors'] : [])] });
   try {
     const desktop = await contextFor(browser, { width: 1440, height: 1080 });
     const { page, details } = desktop;
     await ready(page);
+    assert.equal(await page.getByTestId('willflow-brand').getAttribute('href'), 'https://willflowai.com/');
+    assert((await page.getByTestId('willflow-brand').innerText()).includes('WILLFLOW.AI'));
+    assert.equal(await page.locator('.pce-header').evaluate(element => getComputedStyle(element).backgroundColor), 'rgb(7, 11, 23)');
+    assert.equal(await page.locator('.pce-canvas').evaluate(element => getComputedStyle(element).backgroundColor), 'rgb(238, 242, 246)');
     assert.equal(await page.getByTestId('public-examples-page').getAttribute('data-example-id'), 'motor-bracket');
     assert.equal(await page.getByTestId('public-example-upload-own').getAttribute('href'), '/try/?mode=upload');
     assert.equal(await page.locator('[data-testid^="public-example-card-"]').count(), 3);
@@ -88,7 +95,9 @@ async function main() {
       await page.getByTestId('public-example-isolate').click();
       assert((await page.locator('.pce-model-toolbar').innerText()).includes('单件视图'));
       await page.getByTestId('public-example-isolate').click();
-      if (id === 'sheet-metal-enclosure') await page.screenshot({ path: path.join(output, 'enclosure-native.png'), fullPage: true, animations: 'disabled' });
+      // A full-page WebGL capture resizes the viewport and forces another costly
+      // software render. Capture the already-visible viewer without that resize.
+      if (id === 'sheet-metal-enclosure') await page.getByTestId('public-example-viewer').screenshot({ path: path.join(output, 'enclosure-native.png'), timeout: 60000, animations: 'disabled' });
       await page.getByTestId('public-example-tab-bom').click();
       assert.equal(await page.getByTestId('public-example-bom').locator('tbody tr').count(), detail.parts.length);
       await page.getByTestId('public-example-tab-quote').click();

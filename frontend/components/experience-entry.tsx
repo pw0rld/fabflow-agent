@@ -12,6 +12,6 @@ export default function ExperienceEntry() {
     const query = new URLSearchParams(window.location.search)
     setMode(query.getAll('mode').length === 1 && query.get('mode') === 'upload' ? 'upload' : 'public')
   }, [])
-  if (mode === 'checking') return <div className="pce-entry-loading" role="status">正在打开 FabFlow 体验</div>
+  if (mode === 'checking') return <div className="pce-entry-loading" role="status">正在打开 WillFlow.AI 体验</div>
   return mode === 'upload' ? <CustomerTrial /> : <PublicCadExamples />
 }

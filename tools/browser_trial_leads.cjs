@@ -156,7 +156,7 @@ async function mocked(browser, viewport, options = {}) {
       return reject();
     }
     if (!['GET', 'HEAD'].includes(method)) return reject();
-    const allowed = ['/try/', '/workbench/leads/', '/favicon.ico'].includes(url.pathname)
+    const allowed = ['/try/', '/workbench/leads/', '/favicon.ico', '/workbench/willflow-mark.svg'].includes(url.pathname)
       || url.pathname.startsWith('/workbench/_next/') || url.pathname.startsWith('/workbench/cad-preview/')
       || /^\/workbench\/(?:icon[^/]*\.(?:png|svg)|apple-icon\.png)$/.test(url.pathname);
     return allowed ? route.continue() : reject();
@@ -179,6 +179,9 @@ async function main() {
     const customer = await mocked(browser, { width: 1440, height: 1080 }, { loseInterest: true });
     const page = await pageFor(customer.context, '/try/?mode=upload');
     await page.getByTestId('trial-profile-form').waitFor();
+    assert.equal(await page.getByTestId('willflow-brand').getAttribute('href'), 'https://willflowai.com/');
+    assert.equal(await page.locator('.fft-header').evaluate(element => getComputedStyle(element).backgroundColor), 'rgb(7, 11, 23)');
+    assert.equal(await page.locator('.fft').evaluate(element => getComputedStyle(element).backgroundColor), 'rgb(245, 247, 251)');
     assert.equal(await page.getByTestId('trial-contact-consent').isChecked(), false);
     await page.getByTestId('trial-file-input').setInputFiles({ name: 'flow-fixture.step', mimeType: 'application/octet-stream',
       buffer: Buffer.from('ISO-10303-21;\nHEADER;ENDSEC;DATA;ENDSEC;END-ISO-10303-21;\n') });

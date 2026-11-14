@@ -5,11 +5,13 @@ import { ArrowDownToLine, ArrowRight, Box, Check, ChevronRight, CircleHelp, Cloc
 import BatchPartViewer, { safePartPreviewUrl } from '@/components/batch-part-viewer'
 import SourceAssemblyPreview from '@/components/source-assembly-preview'
 import ProcessQuotePanel from '@/components/process-quote-panel'
+import WillFlowBrand from '@/components/willflow-brand'
 import { TrialContactProfile, TrialInterestPanel, useTrialLeadProfile } from '@/components/trial-contact-profile'
 import type { CustomerOrder } from '@/components/customer-upload-portal'
 import { estimatedWeight, quotationCount, quotationNumber } from '@/lib/batch-display-format'
 import { savedWeightDisplay } from '@/lib/customer-weight-summary'
 import './customer-trial.css'
+import './willflow-workspace-theme.css'
 
 const API = '/workbench/customer/api'
 const LAST = 'fabflow-trial-last-order'
@@ -192,7 +194,7 @@ export default function CustomerTrial() {
   }
   const total = Math.max(0, Number(current?.progress?.total) || 0), done = Math.max(0, Math.min(total, Number(current?.progress?.done) || 0))
   return <main className="fft" data-testid="trial-page" data-session-ready={ready ? 'true' : 'false'} data-upload-state={quotaBlocked ? 'unavailable' : ready ? 'ready' : 'connecting'} data-lead-flow={leads.enabled === null ? 'loading' : leads.enabled ? 'enabled' : 'disabled'} data-profile-state={leads.profile ? 'saved_unverified' : leads.loading ? 'loading' : leads.error ? 'error' : 'empty'}>
-    <header className="fft-header"><a className="fft-brand" href="/try/" aria-label="FabFlow 首页"><span><Box size={24} strokeWidth={1.7}/></span><strong>FabFlow<span>{leads.enabled ? '加工厂软件体验' : '制造报价体验'}</span></strong></a><div className="fft-header-right"><span className="fft-private"><ShieldCheck size={15}/>{leads.enabled ? '工厂专属体验空间' : '专属询价空间'}</span></div></header>
+    <header className="fft-header"><WillFlowBrand className="fft-willflow-brand"/><div className="fft-header-right"><span className="fft-private"><ShieldCheck size={15}/>{leads.enabled ? '工厂专属体验空间' : '专属询价空间'}</span><a href="/try/" className="fft-return-examples">返回公开示例<ArrowRight size={14}/></a></div></header>
     <div className="fft-shell"><section className="fft-intro"><div><span className="fft-eyebrow">FROM CAD TO QUOTE</span><h1>{leads.enabled ? <>从客户模型，<em>到工程与报价。</em></> : <>上传模型，<em>让报价开始。</em></>}</h1><p>{leads.enabled ? '上传一份 STEP，体验自动拆件、BOM 整理与报价草稿。' : '看清装配与零件，查看材料、工艺和报价草稿。'}</p></div><div className="fft-hero-note"><span><ShieldCheck size={17}/>仅本浏览器可查看自己的体验资料</span><small>STEP 原生读取 · 后台持续处理</small></div></section>
       {leads.enabled ? <nav className="fft-steps fft-steps-leads" aria-label="工厂体验流程">{[{ label: '企业资料', note: '介绍你的工厂' }, { label: '上传模型', note: 'STEP / STP' }, { label: '体验结果', note: '拆件、参数与估价' }, { label: '申请试用', note: '接入本厂工作流' }].map((step, index) => <button type="button" key={step.label} className={phase === index + 1 ? 'active' : phase > index + 1 ? 'done' : ''} aria-current={phase === index + 1 ? 'step' : undefined} disabled={index === 2 && !current || index === 1 && (submitting || !!recoverUpload || !!recoverProcessing)} onClick={() => {
         if (index === 0) { setProfileOpenKey(value => value + 1); setFlowStep(1) }

@@ -1,0 +1,256 @@
+/* WillFlow customer workspace: official dark navigation, clear light tools.
+   All overrides are scoped; source CAD images and quote iframe contents stay intact. */
+.fft {
+  --wf-paper: #f5f7fb;
+  --wf-white: #fff;
+  --wf-ink: #17243a;
+  --wf-muted: #5f7088;
+  --wf-line: #dce4ef;
+  --wf-cyan: #1385a0;
+  --wf-blue: #3b67c9;
+  --wf-button: linear-gradient(105deg, #18adca 0%, #397ccf 35%, #6366df 70%, #8658ce);
+  --fft-ink: var(--wf-ink);
+  --fft-muted: var(--wf-muted);
+  --fft-line: var(--wf-line);
+  --fft-blue: var(--wf-cyan);
+  color-scheme: light;
+  background: var(--wf-paper);
+  color: var(--wf-ink);
+  font-family: "Inter", "PingFang SC", "HarmonyOS Sans SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+.fft :is(button, a, input, select, textarea, summary):focus-visible {
+  outline: 2px solid #1599b5;
+  outline-offset: 3px;
+}
+.fft button:disabled { opacity: .5; }
+.fft input, .fft select, .fft textarea { color-scheme: light; }
+.fft select option { color: var(--wf-ink); background: #fff; }
+.fft input::placeholder, .fft textarea::placeholder { color: #8794a6; }
+
+/* The website brand lives in the navigation, not over the technical workspace. */
+.fft .fft-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  height: 68px;
+  background: #070b17;
+  border-bottom-color: #1c273a;
+}
+.fft .fft-willflow-brand { flex-shrink: 0; }
+.fft .fft-header-right { gap: 24px; }
+.fft .fft-private { color: #b4bccf; font-size: 12px; }
+.fft .fft-private > svg { color: #80cbd5; }
+.fft .fft-return-examples {
+  min-height: 40px;
+  padding: 8px 15px;
+  border: 1px solid #354158;
+  border-radius: 999px;
+  background: #111929;
+  color: #e1e8f5;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.fft .fft-return-examples:hover { border-color: #69b7d0; background: #162236; }
+.fft .fft-intro { padding-top: 37px; padding-bottom: 29px; }
+.fft .fft-intro h1 {
+  font-size: clamp(30px, 3.1vw, 42px);
+  font-weight: 650;
+  line-height: 1.25;
+  letter-spacing: -.035em;
+}
+.fft .fft-intro h1 em { color: #276eaa; }
+.fft .fft-intro p { color: var(--wf-muted); line-height: 1.9; }
+.fft .fft-eyebrow { color: #6b7f9b; font-size: 11px; }
+.fft .fft-hero-note, .fft .fft-hero-note > small { color: #6e8097; }
+.fft .fft-hero-note svg { color: #608e9c; }
+
+/* Cyan-blue active states lead through the unchanged sequence. */
+.fft .fft-steps { background: #fff; border-color: var(--wf-line); border-radius: 14px; }
+.fft .fft-steps > button { background: #fff; color: #64758d; }
+.fft .fft-steps > button + button { border-left-color: var(--wf-line); }
+.fft .fft-steps > button > b { border-color: #dce5ee; color: #62768d; }
+.fft .fft-steps small { color: #748398; }
+.fft .fft-steps > button > svg { color: #a2afc0; }
+.fft .fft-steps > button.active {
+  background: linear-gradient(115deg, #edf8fb, #f1f4fc);
+  color: #176c8c;
+}
+.fft .fft-steps > button.active > b {
+  color: #176f91;
+  background: #def1f7;
+  border-color: #bfdfeb;
+  box-shadow: none;
+}
+.fft .fft-steps > button.done { color: #527a70; }
+.fft .fft-steps > button.done > b { color: #3c8875; background: #edf6f2; border-color: #d4e8de; }
+.fft .fft-steps > button:disabled { opacity: .52 !important; }
+
+/* White working surfaces keep geometry, parameters and forms readable. */
+.fft :is(.fft-config, .fft-workspace, .tlf) {
+  color: var(--wf-ink);
+  background: var(--wf-white);
+  border-color: var(--wf-line);
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(25, 48, 82, .025);
+}
+.fft .fft-card-top, .fft .fft-workspace-heading h2 { color: var(--wf-ink); }
+.fft .fft-card-top > button { color: #657b95; }
+.fft .fft-drop {
+  background: #f8fbfe;
+  border-color: #c1d5e7 !important;
+  border-radius: 12px;
+}
+.fft .fft-drop:hover:not(:disabled), .fft .fft-drop.dragging, .fft .fft-drop.selected {
+  border-color: #75b9d0 !important;
+  background: #f0f8fc;
+}
+.fft .fft-drop > span, .fft .fft-file-selected > span, .fft .tlf-icon {
+  background: #eaf4fa;
+  color: #367eab;
+  box-shadow: none;
+}
+.fft .fft-drop > strong { color: #314e6b; }
+.fft .fft-drop > small, .fft .fft-drop > i { color: #75849a; }
+.fft .fft-drop:disabled { background: #f4f7fa; }
+.fft .fft-file-selected { background: #f5f9fc; border-color: #dbe7ef; }
+.fft .fft-file-selected small { color: #6f8097; }
+.fft .fft-quantity label { color: #445b75; }
+.fft .fft-quantity label > span, .fft .fft-quantity > small { color: #7b8a9d; }
+.fft .fft-quantity input, .fft .tlf input, .fft .tlf select, .fft .tlf textarea {
+  min-height: 44px;
+  color: #263d57;
+  border-color: #d4dfeb;
+  border-radius: 9px;
+  background: #fff;
+}
+.fft .fft-quantity input:disabled { color: #70829b; background: #f6f8fb; }
+.fft .fft-config-readonly { border-color: #e5ebf2; }
+.fft .fft-config-readonly :is(span, p), .fft .fft-review-note { color: #6f7f94; }
+.fft .fft-config-readonly strong { color: #49617d; }
+.fft .fft-review-note > p { color: #75849a; }
+.fft :is(.fft-primary, .tlf .tlf-primary, .pqp .pqp-primary) {
+  min-height: 45px;
+  padding: 10px 19px;
+  color: #fff;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: var(--wf-button);
+  box-shadow: 0 4px 13px rgba(71, 107, 174, .13);
+  font-size: 14px;
+  font-weight: 600;
+}
+.fft :is(.fft-primary, .tlf .tlf-primary, .pqp .pqp-primary):hover:not(:disabled) { filter: brightness(1.045); }
+.fft :is(.fft-primary, .tlf .tlf-primary, .pqp .pqp-primary):disabled {
+  color: #6a7d95 !important;
+  border-color: #d9e2eb;
+  background: #dce7f0;
+  box-shadow: none;
+}
+.fft .fft-secondary, .fft .fft-icon {
+  background: #fff;
+  color: #466988 !important;
+  border-color: #d2dfeb !important;
+}
+.fft .fft-secondary { border-radius: 999px; }
+.fft .fft-secondary:hover, .fft .fft-icon:hover { background: #f0f7fb; }
+
+/* Contact intent and request outcomes keep their existing meaning. */
+.fft .tlf-heading p, .fft .tlf-interest-heading p, .fft .tlf label { color: var(--wf-muted); }
+.fft .tlf :is(h2, h3) { color: var(--wf-ink); }
+.fft .tlf-eyebrow { color: #7185a0; }
+.fft .tlf-form, .fft .tlf-saved, .fft .tlf-interest-body, .fft .tlf-application-history { border-color: #e3eaf2; }
+.fft .tlf :is(input, select, textarea):focus-visible { outline-color: #80c2d7; border-color: #70aec8; }
+.fft .tlf .tlf-consent { color: #4e657f; }
+.fft .tlf .tlf-consent input { min-height: 0; accent-color: #178ba7; }
+.fft .tlf :is(.tlf-optional, .tlf-form-actions > p, .tlf-consent small, .tlf-saved > small, .tlf-applications-toggle) { color: #73849a; }
+.fft .tlf .tlf-link { color: #377da5; }
+.fft .tlf-loading { color: #6b819a; }
+.fft .tlf-loading > button { background: #edf6fb; color: #3e7a9f; }
+.fft .tlf-interest { background: #fff; }
+.fft .tlf-interest-heading h2 { color: #243f5d; }
+.fft .tlf-application-history article { border-color: #e4ebf3; }
+.fft .tlf-application-history article > span { color: #477fa5; }
+.fft .tlf-application-history :is(small, strong) { color: #6b7e95; }
+
+/* Processing and model views stay neutral rather than theatrical. */
+.fft .fft-empty { background: radial-gradient(ellipse at 50% 30%, #f2f8fc, transparent 65%); }
+.fft .fft-orbit { border-color: #ddeaf5; }
+.fft .fft-orbit:after { border-color: #e4eaf5; }
+.fft .fft-outline-box { color: #4d8bb3; border-color: #d9e7f2; background: linear-gradient(135deg, #fff, #edf5fb); box-shadow: 0 12px 35px rgba(68, 103, 146, .055); }
+.fft .fft-empty-art > i, .fft .fft-empty-art > b { color: #718faf; background: #fff; border-color: #dde7f1; box-shadow: none; }
+.fft .fft-empty h2, .fft .fft-saved h3 { color: #294866; }
+.fft .fft-empty > p, .fft .fft-empty-features > span, .fft .fft-saved p, .fft .fft-loading p { color: #6a7e98; }
+.fft .fft-empty > .fft-eyebrow, .fft .fft-empty-features svg { color: #7c94b2; }
+.fft .fft-empty-features { border-color: #e3ebf4; }
+.fft .fft-tabs { background: #fafcfe; border-color: #e0e8f1; }
+.fft .fft-tabs > button { color: #71849c; }
+.fft .fft-tabs > button.active { color: #1e7d9c; border-bottom-color: #2c9ab3; }
+.fft .fft-progress { background: #f2f8fc; color: #4c88b0; border-color: #d9e8f4; }
+.fft .fft-progress strong { color: #3a6892; }
+.fft .fft-progress p, .fft .fft-progress small { color: #6f829b; }
+.fft .fft-progress-bar { background: #e0eaf5; }
+.fft .fft-progress-bar > span { background: var(--wf-button); }
+.fft .fft-status.running { color: #4385ab; background: #ebf5fb; }
+.fft .fft-model-summary > div { color: #6b809a; }
+.fft .fft-model-summary strong { color: #3c5a7a; }
+.fft .fft-model-summary button { color: #357ca3; }
+.fft .fft-parts-list { background: #f9fbfe; border-color: #e2e9f2; }
+.fft .fft-parts-list > button:hover { background: #f0f7fc; }
+.fft .fft-parts-list > button.selected { background: #eaf5fa; border-color: #bfdde9; }
+.fft .fft-parts-list strong, .fft .fft-part-title h3 { color: #3a5978; }
+.fft .fft-parts-list small, .fft .fft-part-title > span, .fft .fft-part-facts :is(dt, small) { color: #74879f; }
+.fft .fft-part-facts dd { color: #3d5c7d; }
+.fft .fft-part-visual { background: #f6f9fc; border-color: #e2eaf2; }
+.fft .fft-part-visual > img { mix-blend-mode: normal; }
+.fft .fft-process-tags > span { color: #5e7b98; background: #edf4fa; }
+.fft .fft-part-notes, .fft .fft-part-notes ul { color: #71829a; }
+.fft .sap, .fft .fft-model .sap { border-color: #dce6ef; border-radius: 12px; }
+.fft .sap-icon { color: #387e9c; background: #ecf5f9; }
+.fft .sap-title p, .fft .sap-source, .fft .sap-note { color: #6a8497; }
+.fft .sap-title h3 { color: #2e536b; }
+.fft .sap-toolbar { background: #f8fbfd; border-color: #e0e9f0; }
+.fft .sap-toggle, .fft .sap-toolbar button { color: #557b94; border-color: #d2e1ec; }
+.fft .sap-stage, .fft .sap-canvas { background: #eef2f6; }
+
+/* Quote documents, model images, and technical drawing paper are not recolored. */
+.fft .fft-quote-hero { background: #fbfdff; border-color: #d9e6f1; }
+.fft .fft-quote-hero > span { color: #6586a3; }
+.fft .fft-quote-hero > strong { color: #234c70; font-variant-numeric: tabular-nums; }
+.fft .fft-quote-hero > p, .fft .fft-quote-hero > small { color: #6e819b; }
+.fft .fft-preview-toggle { color: #477da0; }
+.fft .pqp .pqp-heading p, .fft .pqp .pqp-note, .fft .pqp .pqp-scope,
+.fft .pqp .pqp-adoption small, .fft .pqp .pqp-details :is(dt, small, ul) { color: #72869a; }
+.fft .pqp .pqp-details dd { color: #4e6c84; }
+.fft .pqp .pqp-route-parts button { color: #4f7a8c; background: #f4fafc; border-color: #d7e5ec; }
+.fft .bpv { color: #34566e; font-family: inherit; }
+.fft .bpv-eyebrow, .fft .bpv-details-note, .fft .bpv-facts dt, .fft .bpv-geometry-note,
+.fft .bpv-heading > div > p:last-child { color: #6c8498; }
+.fft .bpv-modes button[aria-pressed=true], .fft .bpv-locate button[aria-pressed=true] { color: #277a9c; background: #eaf6fa; border-color: #bfdde9; }
+.fft .bpv a { color: #2a7c9e; }
+.fft .fft-footer { color: #74869c; }
+
+@media (max-width: 1000px) {
+  .fft .fft-header-right { gap: 14px; }
+  .fft .fft-hero-note { display: none; }
+}
+@media (max-width: 680px) {
+  .fft .fft-header { padding-inline: 16px; gap: 12px; }
+  .fft .fft-private { display: none; }
+  .fft .fft-return-examples { min-height: 40px; padding: 8px 12px; font-size: 12px; }
+  .fft .fft-shell { width: calc(100% - 32px); }
+  .fft .fft-intro { padding: 29px 0 25px; }
+  .fft .fft-intro h1 { font-size: clamp(28px, 7.5vw, 34px); line-height: 1.3; }
+  .fft .fft-intro p { font-size: 14px; margin-top: 13px; }
+  .fft :is(.fft-config, .fft-workspace, .tlf) { border-radius: 14px; }
+  .fft .fft-steps { border-radius: 12px; }
+  .fft .fft-steps > button { padding: 13px 10px; }
+  .fft .fft-steps strong { font-size: 13px; }
+  .fft .fft-steps > button > b { width: 27px; height: 27px; }
+  .fft .fft-quote-hero { padding: 23px 20px; }
+  .fft .fft-return-examples > svg { width: 13px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fft *, .fft *::before, .fft *::after { scroll-behavior: auto; transition: none !important; }
+}

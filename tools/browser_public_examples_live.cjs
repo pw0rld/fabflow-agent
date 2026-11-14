@@ -39,6 +39,8 @@ async function main() {
     assert.equal((await page.goto(new URL('/try/', target).href, { waitUntil: 'networkidle' })).status(), 200);
     await page.waitForFunction(() => document.querySelector('[data-testid="public-example-viewer"]')?.getAttribute('data-state') === 'ready', null, { timeout: 60000 });
     assert.equal(await page.getByTestId('public-examples-page').getAttribute('data-example-id'), 'motor-bracket');
+    assert.equal(await page.getByTestId('willflow-brand').getAttribute('href'), 'https://willflowai.com/');
+    assert.equal(await page.locator('.pce-header').evaluate(element => getComputedStyle(element).backgroundColor), 'rgb(7, 11, 23)');
     assert.equal(await page.getByTestId('trial-page').count(), 0);
     assert.equal(report.public_customer_requests, 0);
     assert(!(await page.locator('body').innerText()).includes('ybm-fhz'));
@@ -50,6 +52,8 @@ async function main() {
     await page.getByTestId('trial-page').waitFor();
     await page.waitForFunction(() => document.querySelector('[data-testid="trial-page"]')?.getAttribute('data-session-ready') === 'true');
     await page.getByTestId('trial-profile-form').waitFor();
+    assert.equal(await page.locator('.fft-header').evaluate(element => getComputedStyle(element).backgroundColor), 'rgb(7, 11, 23)');
+    assert.equal(await page.locator('.fft').evaluate(element => getComputedStyle(element).backgroundColor), 'rgb(245, 247, 251)');
     assert.equal(new URL(page.url()).searchParams.get('mode'), 'upload');
     assert.equal(await page.getByTestId('public-examples-page').count(), 0);
     assert.equal(await page.getByTestId('trial-contact-consent').isChecked(), false);

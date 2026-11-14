@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { ArrowRight, Box, Check, ChevronRight, Download, ExternalLink, FileText, Focus, Layers3, LoaderCircle, RotateCcw, ShieldCheck } from 'lucide-react'
+import WillFlowBrand from '@/components/willflow-brand'
 import './public-cad-examples.css'
 
 const ROOT = '/workbench/public-examples/'
@@ -220,8 +221,8 @@ export default function PublicCadExamples() {
   function chooseExample(id: ExampleId) { setSelected(id); setTab('model'); setPartId(null); setIsolated(false) }
   function selectPart(id: string | null) { setPartId(id); if (!id) setIsolated(false) }
   return <main className="pce" data-testid="public-examples-page" data-example-id={selected}>
-    <header className="pce-header"><a href="/try/" className="pce-brand"><span><Box size={24}/></span><strong>FabFlow<small>加工厂软件体验</small></strong></a><div><span className="pce-public"><ShieldCheck size={15}/>公开 CAD 示例</span><a className="pce-primary" href="/try/?mode=upload" data-testid="public-example-upload-own">用我的 STEP 体验<ArrowRight size={16}/></a></div></header>
-    <div className="pce-shell"><section className="pce-hero"><div><span className="pce-eyebrow">A REAL CAD. THE WHOLE FLOW.</span><h1>从一个模型，<em>看见拆件与报价。</em></h1><p>选择一份常见公开模型，查看原生几何、零件 BOM 与模拟报价。</p></div><div className="pce-hero-note"><Check size={15}/><span>无需上传 · 不占体验次数<small>公开样例预先解析，随时查看</small></span></div></section>
+    <header className="pce-header"><WillFlowBrand className="pce-willflow-brand"/><div className="pce-header-actions"><span className="pce-public"><ShieldCheck size={15}/>CAD 体验空间</span><a className="pce-home-link" href="https://willflowai.com/"><ExternalLink size={14}/><span>返回官网</span></a><a className="pce-primary" href="/try/?mode=upload" data-testid="public-example-upload-own">用我的 STEP 体验<ArrowRight size={16}/></a></div></header>
+    <div className="pce-shell"><section className="pce-hero"><div><span className="pce-eyebrow"><i/>WILLFLOW.AI · CAD WORKSPACE</span><h1>从一个模型，<em>看见拆件与报价。</em></h1><p>选择一份常见公开模型，查看原生几何、零件 BOM 与模拟报价。</p></div><div className="pce-hero-note"><Check size={15}/><span>无需上传 · 不占体验次数<small>公开样例预先解析，随时查看</small></span></div></section>
       <section className="pce-catalog" aria-label="选择公开 CAD 示例" data-testid="public-example-catalog">
         {catalogLoading ? <div className="pce-catalog-message" role="status"><LoaderCircle size={20} className="pce-spin"/>正在载入公开示例</div> : catalogError ? <div className="pce-catalog-message pce-error" role="alert"><span>{catalogError}</span><button type="button" className="pce-secondary" onClick={() => setCatalogTick(value => value + 1)}>重新载入目录</button></div> : catalog.map((item, index) => <button type="button" className={`pce-sample${item.id === selected ? ' selected' : ''}`} key={item.id} data-testid={`public-example-card-${item.id}`} aria-pressed={item.id === selected} onClick={() => chooseExample(item.id)}><span className="pce-sample-icon">{item.id === 'sheet-metal-enclosure' ? <Layers3 size={29}/> : item.id === 'motor-bracket' ? <Focus size={29}/> : <Box size={29}/>}</span><div><small>0{index + 1} / {item.category}</small><h2>{item.title}</h2><p>{item.description}</p><span>{item.part_count} 种零件<i/> {item.occurrence_count} 件 / 套</span></div><span className="pce-sample-check">{item.id === selected ? <Check size={16}/> : <ChevronRight size={16}/>}</span></button>)}
       </section>
@@ -236,7 +237,7 @@ export default function PublicCadExamples() {
         </> : null}
       </section>
       <section className="pce-own-model"><div><span className="pce-eyebrow">TRY IT WITH YOUR PARTS</span><h2>换成你的模型，看看结果。</h2><p>填写企业资料后上传一份 STEP，体验原生拆件、BOM 整理与报价草稿。</p></div><a href="/try/?mode=upload" className="pce-primary">上传我的 STEP<ArrowRight size={17}/></a></section>
-      <footer className="pce-footer"><span>公开模型与原作者许可随样例列明。</span><span>FabFlow · 加工厂 AI 拆图与报价软件体验</span></footer>
+      <footer className="pce-footer"><span>公开模型与原作者许可随样例列明。</span><span>意志流动 WILLFLOW.AI · CAD 拆图与报价体验</span></footer>
     </div>
   </main>
 }
